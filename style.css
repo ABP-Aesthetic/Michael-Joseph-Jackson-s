@@ -1,0 +1,12 @@
+.about-sections {
+    margin: 40px auto;
+    max-width: 1000px;
+    padding: 20px;
+}
+
+.about-card {
+    display: block;
+    margin: 20px 0;
+    padding: 25px;
+    text-decoration: none;
+}
