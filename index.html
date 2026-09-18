@@ -3,11 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Michael Joseph Jackson's 🕴✨💗</title>
+    <title>Michael Joseph Jackson's</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: #000;
+        }
+
+        .portada {
+            height: 100vh;
+            width: 100%;
+            background-image: url("Portada.png");
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .flecha {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 35px;
+            animation: bajar 1.5s infinite;
+        }
+
+        @keyframes bajar {
+            0%, 100% {
+                transform: translate(-50%, 0);
+            }
+            50% {
+                transform: translate(-50%, 10px);
+            }
+        }
+
+        .contenido {
+            min-height: 100vh;
+            background: white;
+            padding: 80px 30px;
+            text-align: center;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Michael Joseph Jackson's 🕴✨💗</h1>
-    <p>Un archivo dedicado a la vida, obra y legado de Michael Jackson.</p>
+
+    <section class="portada">
+        <div class="flecha">↓</div>
+    </section>
+
+    <section class="contenido">
+        <h1>Michael Joseph Jackson's</h1>
+        <p>El archivo sobre Michael empieza aquí.</p>
+    </section>
+
 </body>
 </html>
