@@ -1,3 +1,4 @@
+console.log("SEARCH.JS NUEVO FUNCIONANDO");
 const searchPages = [
     {
         title: "🕴 About Michael",
