@@ -46,6 +46,7 @@ const searchPages = [
 ];
 
 const searchInput = document.getElementById("search");
+console.log("SEARCH.JS FUNCIONA", searchInput);
 
 if (searchInput) {
 
