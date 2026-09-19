@@ -209,6 +209,7 @@ if (matchingChild) {
 }
 
         mainLink.textContent = mainPage.title;
+        mainLink.style.backgroundColor = "yellow";
 
         resultsContainer.appendChild(mainLink);
     }
