@@ -1,3 +1,4 @@
+alert("SCRIPT NUEVO FUNCIONA");
 window.addEventListener("DOMContentLoaded", function () {
 
     const savedLevel = localStorage.getItem("siteLevel");
