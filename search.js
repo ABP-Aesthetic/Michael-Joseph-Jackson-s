@@ -168,9 +168,29 @@ function displayResults(results, query) {
 
     resultsContainer.innerHTML = "";
 
-    const mainResults = results.filter(
-        result => result.parent === null
-    );
+    const parentTitles = [
+    ...new Set(
+        results
+            .filter(result => result.parent !== null)
+            .map(result => result.parent)
+    )
+];
+
+const mainResults = results.filter(
+    result => result.parent === null
+);
+
+for (const parentTitle of parentTitles) {
+    if (!mainResults.some(result => result.title === parentTitle)) {
+        const parentPage = searchPages.find(
+            page => page.title === parentTitle
+        );
+
+        if (parentPage) {
+            mainResults.push(parentPage);
+        }
+    }
+}
 
     for (const mainPage of mainResults) {
 
