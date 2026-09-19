@@ -43,23 +43,29 @@ function applySiteLevel() {
 
     const level = localStorage.getItem("siteLevel") || "simple";
 
-    document.body.classList.remove("level-simple", "level-complete");
-    document.body.classList.add("level-" + level);
-
     const simpleElements = document.querySelectorAll(".simple-version");
     const completeElements = document.querySelectorAll(".complete-version");
 
-    simpleElements.forEach(element => {
-        element.style.display = "block";
-    });
+    if (level === "simple") {
 
-    completeElements.forEach(element => {
-        if (level === "complete") {
+        simpleElements.forEach(element => {
             element.style.display = "block";
-        } else {
+        });
+
+        completeElements.forEach(element => {
             element.style.display = "none";
-        }
-    });
+        });
+
+    } else {
+
+        simpleElements.forEach(element => {
+            element.style.display = "none";
+        });
+
+        completeElements.forEach(element => {
+            element.style.display = "block";
+        });
+    }
 }
 
 window.addEventListener("DOMContentLoaded", applySiteLevel);
