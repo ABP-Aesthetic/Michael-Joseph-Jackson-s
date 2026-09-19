@@ -39,3 +39,27 @@ window.addEventListener("DOMContentLoaded", function () {
     };
 
 });
+function applySiteLevel() {
+
+    const level = localStorage.getItem("siteLevel") || "simple";
+
+    document.body.classList.remove("level-simple", "level-complete");
+    document.body.classList.add("level-" + level);
+
+    const simpleElements = document.querySelectorAll(".simple-version");
+    const completeElements = document.querySelectorAll(".complete-version");
+
+    simpleElements.forEach(element => {
+        element.style.display = "block";
+    });
+
+    completeElements.forEach(element => {
+        if (level === "complete") {
+            element.style.display = "block";
+        } else {
+            element.style.display = "none";
+        }
+    });
+}
+
+window.addEventListener("DOMContentLoaded", applySiteLevel);
