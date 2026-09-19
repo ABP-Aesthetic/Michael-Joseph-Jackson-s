@@ -68,3 +68,20 @@ function applySiteLevel() {
 }
 
 window.addEventListener("DOMContentLoaded", applySiteLevel);
+function highlightMainSection() {
+
+    const params = new URLSearchParams(window.location.search);
+    const search = params.get("search");
+
+    if (!search) {
+        return;
+    }
+
+    const title = document.querySelector(".page-content h1");
+
+    if (title) {
+        title.classList.add("search-highlight");
+    }
+}
+
+window.addEventListener("DOMContentLoaded", highlightMainSection);
