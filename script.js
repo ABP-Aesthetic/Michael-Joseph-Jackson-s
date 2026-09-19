@@ -97,9 +97,9 @@ function highlightMatchingSection() {
 
     links.forEach(link => {
 
-        if (link.getAttribute("href") === match) {
-            link.style.backgroundColor = "yellow";
-        }
+        if (link.getAttribute("href").includes(match)) {
+    link.style.backgroundColor = "yellow";
+}
 
     });
 }
