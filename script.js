@@ -122,7 +122,11 @@ function highlightSearchText() {
         return;
     }
 
-    const content = document.querySelector(".page-content") || document.body;
+    const content = document.querySelector(".page-content");
+
+    if (!content) {
+        return;
+    }
 
     const walker = document.createTreeWalker(
         content,
@@ -145,7 +149,9 @@ function highlightSearchText() {
 
     textNodes.forEach(textNode => {
 
-        if (!regex.test(textNode.nodeValue)) {
+        const text = textNode.nodeValue;
+
+        if (!regex.test(text)) {
             regex.lastIndex = 0;
             return;
         }
@@ -154,31 +160,27 @@ function highlightSearchText() {
 
         const fragment = document.createDocumentFragment();
         let lastIndex = 0;
+        let match;
 
-        textNode.nodeValue.replace(
-            regex,
-            (match, offset) => {
+        while ((match = regex.exec(text)) !== null) {
 
-                fragment.appendChild(
-                    document.createTextNode(
-                        textNode.nodeValue.slice(lastIndex, offset)
-                    )
-                );
+            fragment.appendChild(
+                document.createTextNode(
+                    text.slice(lastIndex, match.index)
+                )
+            );
 
-                const highlight = document.createElement("span");
-                highlight.className = "search-highlight";
-                highlight.textContent = match;
+            const highlight = document.createElement("span");
+            highlight.className = "search-highlight";
+            highlight.textContent = match[0];
 
-                fragment.appendChild(highlight);
+            fragment.appendChild(highlight);
 
-                lastIndex = offset + match.length;
-            }
-        );
+            lastIndex = match.index + match[0].length;
+        }
 
         fragment.appendChild(
-            document.createTextNode(
-                textNode.nodeValue.slice(lastIndex)
-            )
+            document.createTextNode(text.slice(lastIndex))
         );
 
         textNode.parentNode.replaceChild(fragment, textNode);
