@@ -37,10 +37,10 @@
 .menu {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    margin-top: 50px;
+    gap: 25px;
+    margin-top: 70px;
 }
 
 .menu a {
-    font-size: 1.2em;
+    font-size: 1.3em;
 }
