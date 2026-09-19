@@ -45,13 +45,13 @@
     font-size: 1.4em;
 }
 #search-results {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    display: block !important;
     margin-top: 20px;
+    width: 100%;
 }
 
 #search-results a {
     display: block !important;
     width: fit-content;
+    margin-bottom: 15px;
 }
