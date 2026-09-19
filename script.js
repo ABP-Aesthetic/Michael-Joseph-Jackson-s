@@ -80,7 +80,7 @@ function highlightMainSection() {
     const title = document.querySelector(".page-content h1");
 
     if (title) {
-        title.classList.add("search-highlight");
+        title.style.backgroundColor = "yellow";
     }
 }
 
