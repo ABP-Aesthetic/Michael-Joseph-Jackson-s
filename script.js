@@ -39,16 +39,3 @@ window.addEventListener("DOMContentLoaded", function () {
     };
 
 });
-const searchInput = document.getElementById("search");
-
-if (searchInput) {
-    searchInput.addEventListener("input", function () {
-        const query = searchInput.value.toLowerCase().trim();
-
-        if (!query) {
-            return;
-        }
-
-        console.log("Searching for:", query);
-    });
-}
