@@ -69,7 +69,7 @@ if (searchInput) {
     const resultsContainer = document.createElement("div");
     resultsContainer.id = "search-results";
 
-    document.body.appendChild(resultsContainer);
+    searchInput.parentElement.appendChild(resultsContainer);
 
     let searchTimer;
     let searchNumber = 0;
