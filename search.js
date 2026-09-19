@@ -118,6 +118,7 @@ if (searchInput) {
                     }
 
                     const text = content.innerText || "";
+                    console.log(page.title, text);
 
                     const lowerText = text.toLowerCase();
                     const lowerQuery = query.toLowerCase();
