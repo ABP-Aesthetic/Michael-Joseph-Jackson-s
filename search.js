@@ -44,3 +44,12 @@ const searchPages = [
         url: "more-facts.html"
     }
 ];
+const searchInput = document.getElementById("search");
+
+if (searchInput) {
+    searchInput.addEventListener("input", function () {
+        const query = searchInput.value.toLowerCase().trim();
+
+        console.log("Search:", query);
+    });
+}
