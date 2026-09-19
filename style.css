@@ -40,7 +40,9 @@
     gap: 25px;
     margin-top: 70px;
 }
-
+.search-highlight {
+    background-color: yellow;
+}
 .menu a {
     font-size: 1.3em;
 }
