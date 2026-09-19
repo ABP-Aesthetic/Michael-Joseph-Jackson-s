@@ -44,12 +44,59 @@ const searchPages = [
         url: "more-facts.html"
     }
 ];
+
 const searchInput = document.getElementById("search");
 
 if (searchInput) {
-    searchInput.addEventListener("input", function () {
+
+    const resultsContainer = document.createElement("div");
+    resultsContainer.id = "search-results";
+
+    searchInput.parentElement.appendChild(resultsContainer);
+
+    searchInput.addEventListener("input", async function () {
+
         const query = searchInput.value.toLowerCase().trim();
 
-        console.log("Search:", query);
+        resultsContainer.innerHTML = "";
+
+        if (!query) {
+            return;
+        }
+
+        for (const page of searchPages) {
+
+            try {
+                const response = await fetch(page.url);
+                const html = await response.text();
+
+                const parser = new DOMParser();
+                const documentPage = parser.parseFromString(html, "text/html");
+
+                const content = documentPage.querySelector(".page-content");
+
+                if (!content) {
+                    continue;
+                }
+
+                const text = content.innerText.toLowerCase();
+
+                if (text.includes(query)) {
+
+                    const result = document.createElement("div");
+
+                    result.innerHTML = `
+                        <a href="${page.url}?search=${encodeURIComponent(query)}">
+                            ${page.title}
+                        </a>
+                    `;
+
+                    resultsContainer.appendChild(result);
+                }
+
+            } catch (error) {
+                console.error("Error searching:", page.url, error);
+            }
+        }
     });
 }
