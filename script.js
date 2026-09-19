@@ -80,7 +80,6 @@ function highlightMainSection() {
     const title = document.querySelector(".page-content h1");
 
     if (title) {
-        title.style.backgroundColor = "yellow";
     }
 }
 
