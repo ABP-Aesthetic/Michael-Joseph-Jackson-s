@@ -46,3 +46,13 @@
 .menu a {
     font-size: 1.3em;
 }
+#search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+#search-results a {
+    display: block;
+}
