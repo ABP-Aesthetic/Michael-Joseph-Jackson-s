@@ -125,7 +125,8 @@ if (searchInput) {
                     const lowerQuery = query.toLowerCase();
 
                     if (lowerText.includes(lowerQuery)) {
-
+console.log("COINCIDENCIA:", page.title, query);
+                        
                         results.push({
                             title: page.title,
                             url: page.url,
