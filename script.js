@@ -122,11 +122,7 @@ function highlightSearchText() {
         return;
     }
 
-    const content = document.querySelector(".page-content");
-
-    if (!content) {
-        return;
-    }
+    const content = document.querySelector(".page-content") || document.body;
 
     const walker = document.createTreeWalker(
         content,
