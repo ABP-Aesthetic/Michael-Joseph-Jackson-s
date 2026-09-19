@@ -45,7 +45,10 @@
     font-size: 1.4em;
 }
 #search-results {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start;
+    gap: 15px;
     margin-top: 20px;
     width: 100%;
 }
@@ -53,5 +56,4 @@
 #search-results a {
     display: block !important;
     width: fit-content;
-    margin-bottom: 15px;
 }
