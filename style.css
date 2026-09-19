@@ -57,3 +57,6 @@
     display: block !important;
     width: fit-content;
 }
+.search-highlight {
+    background-color: yellow;
+}
