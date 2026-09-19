@@ -52,5 +52,6 @@
 }
 
 #search-results a {
-    display: block;
+    display: block !important;
+    width: fit-content;
 }
