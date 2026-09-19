@@ -195,8 +195,18 @@ function displayResults(results, query) {
 
         const mainLink = document.createElement("a");
 
-        mainLink.href =
-            `${mainPage.url}?search=${encodeURIComponent(query)}`;
+        const matchingChild = results.find(
+    result =>
+        result.parent === mainPage.title
+);
+
+if (matchingChild) {
+    mainLink.href =
+        `${mainPage.url}?search=${encodeURIComponent(query)}&match=${encodeURIComponent(matchingChild.url)}`;
+} else {
+    mainLink.href =
+        `${mainPage.url}?search=${encodeURIComponent(query)}`;
+}
 
         mainLink.textContent = mainPage.title;
 
