@@ -118,7 +118,7 @@ if (searchInput) {
                         continue;
                     }
 
-                    const text = content.innerText || "";
+                    const text = content.textContent || "";
                     console.log(page.title, text);
 
                     const lowerText = text.toLowerCase();
