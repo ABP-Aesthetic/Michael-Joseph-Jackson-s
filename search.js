@@ -128,10 +128,11 @@ if (searchInput) {
 console.log("COINCIDENCIA:", page.title, query);
                         
                         results.push({
-                            title: page.title,
-                            url: page.url,
-                            parent: page.parent
-                        });
+    title: page.title,
+    url: page.url,
+    parent: page.parent,
+    matchPage: page.url
+});
 
                     }
 
