@@ -168,34 +168,29 @@ function displayResults(results, query) {
 
     resultsContainer.innerHTML = "";
 
-    const parentTitles = [
-    ...new Set(
-        results
-            .filter(result => result.parent !== null)
-            .map(result => result.parent)
-    )
-];
+    const mainResults = [];
 
-const mainResults = results.filter(
-    result => result.parent === null
-);
+    for (const result of results) {
 
-for (const parentTitle of parentTitles) {
-    if (!mainResults.some(result => result.title === parentTitle)) {
-        const parentPage = searchPages.find(
-            page => page.title === parentTitle
-        );
+        let mainPage = result;
 
-        if (parentPage) {
-            mainResults.push(parentPage);
+        if (result.parent !== null) {
+            mainPage = searchPages.find(
+                page => page.title === result.parent
+            );
+        }
+
+        if (
+            mainPage &&
+            !mainResults.some(
+                existing => existing.title === mainPage.title
+            )
+        ) {
+            mainResults.push(mainPage);
         }
     }
-}
 
     for (const mainPage of mainResults) {
-
-        const group = document.createElement("div");
-        group.className = "search-group";
 
         const mainLink = document.createElement("a");
 
@@ -204,36 +199,10 @@ for (const parentTitle of parentTitles) {
 
         mainLink.textContent = mainPage.title;
 
-        group.appendChild(mainLink);
-
-        const children = results.filter(
-            result => result.parent === mainPage.title
-        );
-
-        if (children.length > 0) {
-
-            const childList = document.createElement("div");
-            childList.className = "search-children";
-
-            for (const child of children) {
-
-                const childLink = document.createElement("a");
-
-                childLink.href =
-                    `${child.url}?search=${encodeURIComponent(query)}`;
-
-                childLink.textContent = child.title;
-
-                childList.appendChild(childLink);
-            }
-
-            group.appendChild(childList);
-        }
-
-        resultsContainer.appendChild(group);
+        resultsContainer.appendChild(mainLink);
     }
 
-    if (results.length === 0) {
+    if (mainResults.length === 0) {
 
         resultsContainer.innerHTML =
             `<p>No results found for "${query}".</p>`;
