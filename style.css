@@ -34,4 +34,13 @@
     flex: 1;
     padding: 12px;
 }
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 50px;
+}
 
+.menu a {
+    font-size: 1.2em;
+}
