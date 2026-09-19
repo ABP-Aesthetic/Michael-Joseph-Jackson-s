@@ -69,7 +69,28 @@ function applySiteLevel() {
 
 window.addEventListener("DOMContentLoaded", applySiteLevel);
 function highlightMainSection() {
+function highlightMatchingSection() {
 
+    const params = new URLSearchParams(window.location.search);
+    const match = params.get("match");
+
+    if (!match) {
+        return;
+    }
+
+    const links = document.querySelectorAll("a");
+
+    links.forEach(link => {
+
+        if (link.getAttribute("href") === match) {
+            link.style.backgroundColor = "yellow";
+        }
+
+    });
+}
+
+window.addEventListener("DOMContentLoaded", highlightMatchingSection);
+    
     const params = new URLSearchParams(window.location.search);
     const search = params.get("search");
 
