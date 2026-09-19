@@ -105,3 +105,80 @@ function highlightMatchingSection() {
 }
 
 window.addEventListener("DOMContentLoaded", highlightMatchingSection);
+function highlightSearchText() {
+
+    const params = new URLSearchParams(window.location.search);
+    const search = params.get("search");
+
+    if (!search) {
+        return;
+    }
+
+    const content = document.querySelector(".page-content");
+
+    if (!content) {
+        return;
+    }
+
+    const walker = document.createTreeWalker(
+        content,
+        NodeFilter.SHOW_TEXT
+    );
+
+    const textNodes = [];
+    let node;
+
+    while (node = walker.nextNode()) {
+        textNodes.push(node);
+    }
+
+    const escapedSearch = search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+    );
+
+    const regex = new RegExp(escapedSearch, "gi");
+
+    textNodes.forEach(textNode => {
+
+        if (!regex.test(textNode.nodeValue)) {
+            regex.lastIndex = 0;
+            return;
+        }
+
+        regex.lastIndex = 0;
+
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+
+        textNode.nodeValue.replace(
+            regex,
+            (match, offset) => {
+
+                fragment.appendChild(
+                    document.createTextNode(
+                        textNode.nodeValue.slice(lastIndex, offset)
+                    )
+                );
+
+                const highlight = document.createElement("span");
+                highlight.className = "search-highlight";
+                highlight.textContent = match;
+
+                fragment.appendChild(highlight);
+
+                lastIndex = offset + match.length;
+            }
+        );
+
+        fragment.appendChild(
+            document.createTextNode(
+                textNode.nodeValue.slice(lastIndex)
+            )
+        );
+
+        textNode.parentNode.replaceChild(fragment, textNode);
+    });
+}
+
+window.addEventListener("DOMContentLoaded", highlightSearchText);
