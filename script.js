@@ -626,6 +626,10 @@ alert("Could not upload " + file.name + ": " + uploadError.message);        retu
        
         alert("Post published! 💗");
         postContent.value = "";
+        window.filesList = [];
+window.linksList = [];
+document.getElementById("selected-files").innerHTML = "";
+document.getElementById("selected-links").innerHTML = "";
 
     });
 
