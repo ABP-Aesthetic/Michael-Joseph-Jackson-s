@@ -548,6 +548,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         alert("Post published! 💗");
+        postContent.value = "";
 
     });
 
