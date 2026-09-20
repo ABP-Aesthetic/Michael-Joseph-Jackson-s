@@ -645,6 +645,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             .select("*")
             .eq("deleted", false)
             .order("created_at", { ascending: false });
+    .limit(20);
 
     if (error) {
         postsContainer.textContent = "Could not load posts.";
