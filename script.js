@@ -393,14 +393,16 @@ document.addEventListener("DOMContentLoaded", function () {
         postMedia.click();
     });
 
-    postMedia.addEventListener("change", function () {
+    postMedia.addEventListener("change", function (event) {
 
-        for (const file of postMedia.files) {
-            filesList.push(file);
-        }
+    const newFiles = Array.from(event.target.files);
 
-        updateFileInput();
+    newFiles.forEach(function (file) {
+        filesList.push(file);
     });
+
+    updateFileInput();
+});
 
     dropZone.addEventListener("dragover", function (event) {
         event.preventDefault();
