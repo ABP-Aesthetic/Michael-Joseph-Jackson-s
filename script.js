@@ -548,6 +548,36 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         alert("Post published! 💗");
+        for (const file of window.filesList) {
+
+    const filePath =
+        user.id + "/" + crypto.randomUUID() + "-" + file.name;
+
+    const { error: uploadError } =
+        await supabaseClient.storage
+            .from("post-media")
+            .upload(filePath, file);
+
+    if (uploadError) {
+        alert("Could not upload " + file.name + ".");
+        return;
+    }
+
+    const { error: mediaError } =
+        await supabaseClient
+            .from("post_media")
+            .insert({
+                post_id: post.id,
+                file_path: filePath,
+                file_type: file.type,
+                original_name: file.name
+            });
+
+    if (mediaError) {
+        alert("Could not save information for " + file.name + ".");
+        return;
+    }
+}
         postContent.value = "";
 
     });
