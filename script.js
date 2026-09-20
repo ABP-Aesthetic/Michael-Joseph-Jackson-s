@@ -299,8 +299,7 @@ document.getElementById("show-register").style.display = "none";
         const loggedInArea = document.getElementById("logged-in-area");
 const loggedInMessage = document.getElementById("logged-in-message");
 
-loggedInMessage.textContent = "You are logged in!";
-loggedInArea.style.display = "block";
+loggedInMessage.textContent = "You are logged in as " + username + "!";loggedInArea.style.display = "block";
     });
     
 });
