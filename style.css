@@ -66,3 +66,8 @@
     display: inline-block;
     margin-right: 10px;
 }
+
+#login-form,
+#register-form {
+    margin-top: 20px;
+}
