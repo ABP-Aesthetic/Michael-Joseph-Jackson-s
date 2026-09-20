@@ -190,9 +190,35 @@ function highlightSearchText() {
 window.addEventListener("DOMContentLoaded", highlightSearchText);
 
 document.addEventListener("DOMContentLoaded", function () {
-    document.getElementById("show-register").addEventListener("click", function () {
-        document.getElementById("register-form").style.display = "block";
+
+    const showLogin = document.getElementById("show-login");
+    const showRegister = document.getElementById("show-register");
+
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
+
+    showLogin.addEventListener("click", function () {
+
+        if (loginForm.style.display === "block") {
+            loginForm.style.display = "none";
+        } else {
+            loginForm.style.display = "block";
+            registerForm.style.display = "none";
+        }
+
     });
+
+    showRegister.addEventListener("click", function () {
+
+        if (registerForm.style.display === "block") {
+            registerForm.style.display = "none";
+        } else {
+            registerForm.style.display = "block";
+            loginForm.style.display = "none";
+        }
+
+    });
+
 });
 const forbiddenUsernames = [
     "michael jackson",
