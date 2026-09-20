@@ -313,6 +313,7 @@ document.getElementById("show-register").style.display = "none";
 const loggedInMessage = document.getElementById("logged-in-message");
 
 loggedInMessage.textContent = "You are logged in as " + profile.username + "!";
+        loggedInArea.style.display = "block";
     });
     
 });
