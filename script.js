@@ -312,8 +312,15 @@ document.getElementById("show-register").style.display = "none";
         const loggedInArea = document.getElementById("logged-in-area");
 const loggedInMessage = document.getElementById("logged-in-message");
 
-loggedInMessage.textContent = "You are logged in as " + profile.username + "!";
-        loggedInArea.style.display = "block";
+loggedInMessage.innerHTML = `
+    <p>Hi, Moonwalker!! 💗✨</p>
+
+    <p>I’m so glad you decided to join this community. I sincerely hope you find a little corner here where you can express and share ideas, thoughts, and feelings with other fans like you. 💖</p>
+
+    <p>You’ve just joined us as <strong>${profile.username}</strong>.</p>
+`;
+
+loggedInArea.style.display = "block";
     });
     
 });
