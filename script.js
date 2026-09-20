@@ -321,6 +321,21 @@ loggedInMessage.innerHTML = `
 `;
 
 loggedInArea.style.display = "block";
+        const logoutButton = document.getElementById("logout-button");
+
+logoutButton.addEventListener("click", async function () {
+
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    loggedInArea.style.display = "none";
+    document.getElementById("show-login").style.display = "inline-block";
+    document.getElementById("show-register").style.display = "inline-block";
+});
     });
     
 });
