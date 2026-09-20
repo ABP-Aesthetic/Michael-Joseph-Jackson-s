@@ -652,6 +652,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         return;
     }
 
+    const { data: { user } } = await supabaseClient.auth.getUser();
     posts.forEach(function (post) {
 
         const postCard = document.createElement("article");
