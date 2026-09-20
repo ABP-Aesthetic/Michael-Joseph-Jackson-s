@@ -684,6 +684,16 @@ document.addEventListener("DOMContentLoaded", async function () {
         editArea.value = post.content;
         editArea.style.display = "block";
         editArea.className = "edit-area";
+        const cancelButton = document.createElement("button");
+cancelButton.textContent = "❌ Cancel";
+cancelButton.type = "button";
+
+cancelButton.addEventListener("click", function () {
+    editArea.remove();
+    content.style.display = "block";
+});
+
+postCard.insertBefore(cancelButton, date);
         editArea.style.width = "100%";
 
         postCard.insertBefore(editArea, date);
