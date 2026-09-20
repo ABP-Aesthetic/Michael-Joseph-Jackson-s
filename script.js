@@ -350,9 +350,56 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const dropZone = document.getElementById("drop-zone");
     const postMedia = document.getElementById("post-media");
+    const selectedFiles = document.getElementById("selected-files");
+
+    let filesList = [];
+
+    function updateFileInput() {
+
+        const dataTransfer = new DataTransfer();
+
+        filesList.forEach(function (file) {
+            dataTransfer.items.add(file);
+        });
+
+        postMedia.files = dataTransfer.files;
+
+        selectedFiles.innerHTML = "";
+
+        filesList.forEach(function (file, index) {
+
+            const fileRow = document.createElement("div");
+
+            const fileName = document.createElement("span");
+            fileName.textContent = file.name;
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.textContent = "✕";
+
+            removeButton.addEventListener("click", function () {
+                filesList.splice(index, 1);
+                updateFileInput();
+            });
+
+            fileRow.appendChild(fileName);
+            fileRow.appendChild(removeButton);
+
+            selectedFiles.appendChild(fileRow);
+        });
+    }
 
     dropZone.addEventListener("click", function () {
         postMedia.click();
+    });
+
+    postMedia.addEventListener("change", function () {
+
+        for (const file of postMedia.files) {
+            filesList.push(file);
+        }
+
+        updateFileInput();
     });
 
     dropZone.addEventListener("dragover", function (event) {
@@ -365,17 +412,15 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     dropZone.addEventListener("drop", function (event) {
-    event.preventDefault();
-    dropZone.style.backgroundColor = "";
 
-    const dataTransfer = new DataTransfer();
+        event.preventDefault();
+        dropZone.style.backgroundColor = "";
 
-    for (const file of event.dataTransfer.files) {
-        dataTransfer.items.add(file);
-    }
+        for (const file of event.dataTransfer.files) {
+            filesList.push(file);
+        }
 
-    postMedia.files = dataTransfer.files;
-        dropZone.textContent = dataTransfer.files.length + " archivo(s) seleccionado(s)";
-});
+        updateFileInput();
+    });
 
 });
