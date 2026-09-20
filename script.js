@@ -275,5 +275,24 @@ if (existingProfile) {
     showLogin.addEventListener("click", function () {
         loginForm.style.display = "block";
     });
+    const loginButton = document.getElementById("login-button");
+
+    loginButton.addEventListener("click", async function () {
+
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            alert(error.message);
+            return;
+        }
+
+        alert("Logged in successfully!");
+    });
     
 });
