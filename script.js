@@ -194,3 +194,11 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("register-form").style.display = "block";
     });
 });
+const forbiddenUsernames = [
+    "michael jackson",
+    "michael-jackson",
+    "michael_jackson",
+    "michael joseph jackson",
+    "michael-joseph-jackson",
+    "michael_joseph_jackson"
+];
