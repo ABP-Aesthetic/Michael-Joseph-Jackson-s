@@ -366,6 +366,7 @@ logoutButton.addEventListener("click", async function () {
 
     loggedInArea.style.display = "none";
     document.getElementById("create-post-area").style.display = "none";
+    document.getElementById("create-post-form").style.display = "none";
     document.getElementById("show-login").style.display = "inline-block";
     document.getElementById("show-register").style.display = "inline-block";
 });
