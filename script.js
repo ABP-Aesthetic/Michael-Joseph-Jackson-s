@@ -648,7 +648,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     .limit(20);
 
     if (error) {
-        postsContainer.textContent = "Could not load posts.";
+        postsContainer.textContent = "Could not load posts: " + error.message;
         return;
     }
 
