@@ -672,7 +672,19 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (user && user.id === post.user_id) {
     const editButton = document.createElement("button");
     editButton.textContent = "✏️ Edit";
-            editButton.style.marginLeft = "10px";
+    editButton.style.marginLeft = "10px";
+
+    editButton.addEventListener("click", function () {
+        content.style.display = "none";
+
+        const editArea = document.createElement("textarea");
+        editArea.value = post.content;
+        editArea.style.display = "block";
+        editArea.style.width = "100%";
+
+        postCard.insertBefore(editArea, date);
+    });
+
     postCard.appendChild(editButton);
 }
 
