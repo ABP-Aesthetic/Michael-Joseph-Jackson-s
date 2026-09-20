@@ -321,6 +321,7 @@ loggedInMessage.innerHTML = `
 `;
 
 loggedInArea.style.display = "block";
+        document.getElementById("create-post-area").style.display = "block";
         const logoutButton = document.getElementById("logout-button");
 
 logoutButton.addEventListener("click", async function () {
