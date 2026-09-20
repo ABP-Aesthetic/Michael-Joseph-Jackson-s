@@ -306,7 +306,7 @@ document.getElementById("show-register").style.display = "none";
         const loggedInArea = document.getElementById("logged-in-area");
 const loggedInMessage = document.getElementById("logged-in-message");
 
-loggedInMessage.textContent = "You are logged in!";
+loggedInMessage.textContent = "You are logged in as " + profile.username + "!";
     });
     
 });
