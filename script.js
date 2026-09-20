@@ -365,10 +365,16 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     dropZone.addEventListener("drop", function (event) {
-        event.preventDefault();
-        dropZone.style.backgroundColor = "";
+    event.preventDefault();
+    dropZone.style.backgroundColor = "";
 
-        postMedia.files = event.dataTransfer.files;
-    });
+    const dataTransfer = new DataTransfer();
+
+    for (const file of event.dataTransfer.files) {
+        dataTransfer.items.add(file);
+    }
+
+    postMedia.files = dataTransfer.files;
+});
 
 });
