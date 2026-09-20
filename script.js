@@ -188,6 +188,9 @@ function highlightSearchText() {
 }
 
 window.addEventListener("DOMContentLoaded", highlightSearchText);
-document.getElementById("show-register").addEventListener("click", function () {
-    document.getElementById("register-form").style.display = "block";
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("show-register").addEventListener("click", function () {
+        document.getElementById("register-form").style.display = "block";
+    });
 });
