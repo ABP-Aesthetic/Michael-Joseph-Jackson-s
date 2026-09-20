@@ -672,6 +672,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (user && user.id === post.user_id) {
     const editButton = document.createElement("button");
     editButton.textContent = "✏️ Edit";
+            editButton.style.marginLeft = "10px";
     postCard.appendChild(editButton);
 }
 
