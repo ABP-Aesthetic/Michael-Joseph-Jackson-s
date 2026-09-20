@@ -432,8 +432,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const addLinkButton = document.getElementById("add-link-button");
     const selectedLinks = document.getElementById("selected-links");
 
-    const linksList = [];
-
+window.linksList = [];
     addLinkButton.addEventListener("click", function () {
 
         const link = linkInput.value.trim();
@@ -442,13 +441,13 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        linksList.push(link);
+        window.linksList.push(link);
 
         linkInput.value = "";
 
         selectedLinks.innerHTML = "";
 
-        linksList.forEach(function (url, index) {
+        window.linksList.forEach(function (url, index) {
 
             const linkRow = document.createElement("div");
 
@@ -460,11 +459,11 @@ document.addEventListener("DOMContentLoaded", function () {
             removeButton.textContent = "✕";
 
             removeButton.addEventListener("click", function () {
-                linksList.splice(index, 1);
+                window.linksList.splice(index, 1);
 
                 selectedLinks.innerHTML = "";
 
-                linksList.forEach(function (url, newIndex) {
+                window.linksList.forEach(function (url, newIndex) {
 
                     const newRow = document.createElement("div");
 
@@ -476,7 +475,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     newRemoveButton.textContent = "✕";
 
                     newRemoveButton.addEventListener("click", function () {
-                        linksList.splice(newIndex, 1);
+                        window.linksList.splice(newIndex, 1);
                         newRow.remove();
                     });
 
@@ -581,7 +580,7 @@ alert("Could not upload " + file.name + ": " + uploadError.message);        retu
         return;
     }
 }
-        for (const url of linksList) {
+        for (const url of window.linksList) {
 
     const { error: linkError } =
         await supabaseClient
