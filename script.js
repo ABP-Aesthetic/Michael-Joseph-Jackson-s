@@ -694,6 +694,11 @@ cancelButton.addEventListener("click", function () {
 });
 
 postCard.insertBefore(cancelButton, date);
+        const saveButton = document.createElement("button");
+saveButton.textContent = "✅ Save";
+saveButton.type = "button";
+
+postCard.insertBefore(saveButton, date);
         editArea.style.width = "100%";
 
         postCard.insertBefore(editArea, date);
