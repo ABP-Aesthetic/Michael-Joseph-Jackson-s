@@ -581,6 +581,21 @@ alert("Could not upload " + file.name + ": " + uploadError.message);        retu
         return;
     }
 }
+        for (const url of linksList) {
+
+    const { error: linkError } =
+        await supabaseClient
+            .from("post_links")
+            .insert({
+                post_id: post.id,
+                url: url
+            });
+
+    if (linkError) {
+        alert("Could not save link: " + linkError.message);
+        return;
+    }
+}
         alert("Post published! 💗");
         postContent.value = "";
 
