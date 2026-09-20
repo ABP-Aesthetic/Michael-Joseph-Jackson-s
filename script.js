@@ -218,6 +218,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
     });
+    const createPostButton = document.getElementById("create-post-button");
+const createPostForm = document.getElementById("create-post-form");
+
+createPostButton.addEventListener("click", function () {
+    if (createPostForm.style.display === "block") {
+        createPostForm.style.display = "none";
+    } else {
+        createPostForm.style.display = "block";
+    }
+});
 
 });
 const forbiddenUsernames = [
