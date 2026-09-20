@@ -662,7 +662,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         content.textContent = post.content;
 
         const date = document.createElement("small");
-        date.textContent = new Date(post.created_at).toLocaleString();
+        date.textContent = new Date(post.created_at).toLocaleDateString();
 
         postCard.appendChild(username);
         postCard.appendChild(content);
