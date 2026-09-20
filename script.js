@@ -690,15 +690,21 @@ cancelButton.type = "button";
 
 cancelButton.addEventListener("click", function () {
     editArea.remove();
+    editButtons.remove();
     content.style.display = "block";
 });
 
-postCard.insertBefore(cancelButton, date);
         const saveButton = document.createElement("button");
 saveButton.textContent = "✅ Save";
 saveButton.type = "button";
+        const editButtons = document.createElement("div");
+editButtons.className = "edit-buttons";
 
-postCard.insertBefore(saveButton, date);
+editButtons.appendChild(saveButton);
+editButtons.appendChild(cancelButton);
+
+postCard.insertBefore(editButtons, date);
+
         editArea.style.width = "100%";
 
         postCard.insertBefore(editArea, date);
