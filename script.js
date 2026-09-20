@@ -668,6 +668,14 @@ document.addEventListener("DOMContentLoaded", async function () {
         postCard.appendChild(username);
         postCard.appendChild(content);
         postCard.appendChild(date);
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
+if (user && user.id === post.user_id) {
+    const editButton = document.createElement("button");
+    editButton.textContent = "✏️ Edit";
+
+    postCard.appendChild(editButton);
+}
 
         postsContainer.appendChild(postCard);
     });
