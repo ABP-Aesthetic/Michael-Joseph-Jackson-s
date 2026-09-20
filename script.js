@@ -616,3 +616,41 @@ alert("Could not upload " + file.name + ": " + uploadError.message);        retu
     });
 
 });
+
+document.addEventListener("DOMContentLoaded", async function () {
+
+    const postsContainer = document.getElementById("posts-container");
+
+    const { data: posts, error } =
+        await supabaseClient
+            .from("posts")
+            .select("*")
+            .eq("deleted", false)
+            .order("created_at", { ascending: false });
+
+    if (error) {
+        postsContainer.textContent = "Could not load posts.";
+        return;
+    }
+
+    posts.forEach(function (post) {
+
+        const postCard = document.createElement("article");
+
+        const username = document.createElement("strong");
+        username.textContent = post.username;
+
+        const content = document.createElement("p");
+        content.textContent = post.content;
+
+        const date = document.createElement("small");
+        date.textContent = new Date(post.created_at).toLocaleString();
+
+        postCard.appendChild(username);
+        postCard.appendChild(content);
+        postCard.appendChild(date);
+
+        postsContainer.appendChild(postCard);
+    });
+
+});
