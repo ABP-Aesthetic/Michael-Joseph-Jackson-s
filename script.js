@@ -375,6 +375,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     postMedia.files = dataTransfer.files;
+        dropZone.textContent = dataTransfer.files.length + " archivo(s) seleccionado(s)";
 });
 
 });
