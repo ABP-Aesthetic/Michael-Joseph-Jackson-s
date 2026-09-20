@@ -343,16 +343,7 @@ loggedInMessage.innerHTML = `
 
 loggedInArea.style.display = "block";
         document.getElementById("create-post-area").style.display = "block";
-        const createPostButton = document.getElementById("create-post-button");
-const createPostForm = document.getElementById("create-post-form");
-
-createPostButton.addEventListener("click", function () {
-    if (createPostForm.style.display === "block") {
-        createPostForm.style.display = "none";
-    } else {
-        createPostForm.style.display = "block";
-    }
-});
+        
         const logoutButton = document.getElementById("logout-button");
 
 logoutButton.addEventListener("click", async function () {
