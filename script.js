@@ -347,7 +347,11 @@ loggedInArea.style.display = "block";
 const createPostForm = document.getElementById("create-post-form");
 
 createPostButton.addEventListener("click", function () {
-    createPostForm.style.display = "block";
+    if (createPostForm.style.display === "block") {
+        createPostForm.style.display = "none";
+    } else {
+        createPostForm.style.display = "block";
+    }
 });
         const logoutButton = document.getElementById("logout-button");
 
