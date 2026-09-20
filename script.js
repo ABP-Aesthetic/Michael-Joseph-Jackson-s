@@ -295,12 +295,7 @@ if (existingProfile) {
 
         alert("Account created! Please check your email to confirm your account.");
     });
-    const showLogin = document.getElementById("show-login");
-    const loginForm = document.getElementById("login-form");
-
-    showLogin.addEventListener("click", function () {
-        loginForm.style.display = "block";
-    });
+    
     const loginButton = document.getElementById("login-button");
 
     loginButton.addEventListener("click", async function () {
