@@ -230,7 +230,23 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Please choose a valid username.");
             return;
         }
+const { data: existingProfile, error: usernameCheckError } =
+    await supabaseClient
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();
 
+if (usernameCheckError) {
+    alert("Could not check username availability.");
+    return;
+}
+
+if (existingProfile) {
+    alert("That username is already taken. Please choose another one.");
+    return;
+}
+        
         if (!email || !password) {
             alert("Please enter your email and password.");
             return;
