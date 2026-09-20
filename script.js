@@ -558,8 +558,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .upload(filePath, file);
 
     if (uploadError) {
-        alert("Could not upload " + file.name + ".");
-        return;
+alert("Could not upload " + file.name + ": " + uploadError.message);        return;
     }
 
     const { error: mediaError } =
