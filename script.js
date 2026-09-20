@@ -327,7 +327,7 @@ if (profileError) {
 }
 
         alert("Logged in successfully!");
-                loginForm.style.display = "none";
+                document.getElementById("login-form").style.display = "none";
         document.getElementById("show-login").style.display = "none";
 document.getElementById("show-register").style.display = "none";
         const loggedInArea = document.getElementById("logged-in-area");
