@@ -202,3 +202,6 @@ const forbiddenUsernames = [
     "michael-joseph-jackson",
     "michael_joseph_jackson"
 ];
+function isUsernameForbidden(username) {
+    return forbiddenUsernames.includes(username.trim().toLowerCase());
+}
