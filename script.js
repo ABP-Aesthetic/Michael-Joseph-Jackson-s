@@ -346,3 +346,29 @@ logoutButton.addEventListener("click", async function () {
     });
     
 });
+document.addEventListener("DOMContentLoaded", function () {
+
+    const dropZone = document.getElementById("drop-zone");
+    const postMedia = document.getElementById("post-media");
+
+    dropZone.addEventListener("click", function () {
+        postMedia.click();
+    });
+
+    dropZone.addEventListener("dragover", function (event) {
+        event.preventDefault();
+        dropZone.style.backgroundColor = "#eeeeee";
+    });
+
+    dropZone.addEventListener("dragleave", function () {
+        dropZone.style.backgroundColor = "";
+    });
+
+    dropZone.addEventListener("drop", function (event) {
+        event.preventDefault();
+        dropZone.style.backgroundColor = "";
+
+        postMedia.files = event.dataTransfer.files;
+    });
+
+});
