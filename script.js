@@ -283,21 +283,27 @@ if (existingProfile) {
         const password = document.getElementById("login-password").value;
 
         const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
+    email: email,
+    password: password
+});
+
+if (error) {
+    alert(error.message);
+    return;
+}
+
 const user = data.user;
 
-const { data: profile } = await supabaseClient
+const { data: profile, error: profileError } = await supabaseClient
     .from("profiles")
     .select("username")
     .eq("id", user.id)
     .single();
-        
-        if (error) {
-            alert(error.message);
-            return;
-        }
+
+if (profileError) {
+    alert("Could not load your profile.");
+    return;
+}
 
         alert("Logged in successfully!");
                 loginForm.style.display = "none";
