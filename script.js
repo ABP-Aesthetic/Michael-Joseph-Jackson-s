@@ -496,3 +496,59 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const publishButton = document.getElementById("publish-post-button");
+    const postContent = document.getElementById("post-content");
+
+    publishButton.addEventListener("click", async function () {
+
+        const content = postContent.value.trim();
+
+        if (!content) {
+            alert("Please write something before publishing.");
+            return;
+        }
+
+        const { data: { user }, error: userError } =
+            await supabaseClient.auth.getUser();
+
+        if (userError || !user) {
+            alert("You must be logged in to publish a post.");
+            return;
+        }
+
+        const { data: profile, error: profileError } =
+            await supabaseClient
+                .from("profiles")
+                .select("username")
+                .eq("id", user.id)
+                .single();
+
+        if (profileError || !profile) {
+            alert("Could not load your profile.");
+            return;
+        }
+
+        const { data: post, error: postError } =
+            await supabaseClient
+                .from("posts")
+                .insert({
+                    user_id: user.id,
+                    username: profile.username,
+                    content: content
+                })
+                .select()
+                .single();
+
+        if (postError) {
+            alert(postError.message);
+            return;
+        }
+
+        alert("Post published! 💗");
+
+    });
+
+});
