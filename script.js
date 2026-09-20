@@ -675,11 +675,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     editButton.style.marginLeft = "10px";
 
     editButton.addEventListener("click", function () {
+        if (postCard.querySelector(".edit-area")) {
+    return;
+}
         content.style.display = "none";
 
         const editArea = document.createElement("textarea");
         editArea.value = post.content;
         editArea.style.display = "block";
+        editArea.className = "edit-area";
         editArea.style.width = "100%";
 
         postCard.insertBefore(editArea, date);
