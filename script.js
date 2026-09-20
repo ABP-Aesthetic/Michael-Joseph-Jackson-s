@@ -286,7 +286,14 @@ if (existingProfile) {
             email: email,
             password: password
         });
+const user = data.user;
 
+const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+        
         if (error) {
             alert(error.message);
             return;
