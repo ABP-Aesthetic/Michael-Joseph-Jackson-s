@@ -352,13 +352,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const postMedia = document.getElementById("post-media");
     const selectedFiles = document.getElementById("selected-files");
 
-    let filesList = [];
-
+window.filesList = [];
+    
     function updateFileInput() {
 
         const dataTransfer = new DataTransfer();
 
-        filesList.forEach(function (file) {
+        window.filesList.forEach(function (file) {
             dataTransfer.items.add(file);
         });
 
@@ -366,7 +366,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         selectedFiles.innerHTML = "";
 
-        filesList.forEach(function (file, index) {
+        window.filesList.forEach(function (file, index) {
 
             const fileRow = document.createElement("div");
 
@@ -378,7 +378,7 @@ document.addEventListener("DOMContentLoaded", function () {
             removeButton.textContent = "✕";
 
             removeButton.addEventListener("click", function () {
-                filesList.splice(index, 1);
+                window.filesList.splice(index, 1);
                 updateFileInput();
             });
 
@@ -398,7 +398,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const newFiles = Array.from(event.target.files);
 
     newFiles.forEach(function (file) {
-        filesList.push(file);
+        window.filesList.push(file);
     });
 
     updateFileInput();
@@ -419,7 +419,7 @@ document.addEventListener("DOMContentLoaded", function () {
         dropZone.style.backgroundColor = "";
 
         for (const file of event.dataTransfer.files) {
-            filesList.push(file);
+            window.filesList.push(file);
         }
 
         updateFileInput();
