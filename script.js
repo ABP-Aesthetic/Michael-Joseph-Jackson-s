@@ -547,7 +547,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        alert("Post published! 💗");
         for (const file of window.filesList) {
 
     const filePath =
@@ -578,6 +577,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 }
+        alert("Post published! 💗");
         postContent.value = "";
 
     });
