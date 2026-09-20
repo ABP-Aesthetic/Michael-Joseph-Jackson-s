@@ -293,6 +293,7 @@ if (existingProfile) {
         }
 
         alert("Logged in successfully!");
+                loginForm.style.display = "none";
     });
     
 });
