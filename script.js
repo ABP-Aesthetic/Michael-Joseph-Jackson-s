@@ -296,6 +296,11 @@ if (existingProfile) {
                 loginForm.style.display = "none";
         document.getElementById("show-login").style.display = "none";
 document.getElementById("show-register").style.display = "none";
+        const loggedInArea = document.getElementById("logged-in-area");
+const loggedInMessage = document.getElementById("logged-in-message");
+
+loggedInMessage.textContent = "You are logged in!";
+loggedInArea.style.display = "block";
     });
     
 });
