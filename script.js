@@ -549,8 +549,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         for (const file of window.filesList) {
 
-    const filePath =
-        user.id + "/" + crypto.randomUUID() + "-" + file.name;
+    const safeFileName = file.name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "_");
+
+const filePath =
+    user.id + "/" + crypto.randomUUID() + "-" + safeFileName;
 
     const { error: uploadError } =
         await supabaseClient.storage
