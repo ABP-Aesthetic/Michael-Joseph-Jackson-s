@@ -202,6 +202,16 @@ const forbiddenUsernames = [
     "michael-joseph-jackson",
     "michael_joseph_jackson"
 ];
-function isUsernameForbidden(username) {
-    return forbiddenUsernames.includes(username.trim().toLowerCase());
+function isUsernameValid(username) {
+    const cleanUsername = username.trim();
+
+    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+        return false;
+    }
+
+    if (forbiddenUsernames.includes(cleanUsername.toLowerCase())) {
+        return false;
+    }
+
+    return true;
 }
