@@ -215,3 +215,43 @@ function isUsernameValid(username) {
 
     return true;
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const registerButton = document.getElementById("register-button");
+
+    registerButton.addEventListener("click", async function () {
+
+        const username = document.getElementById("register-username").value.trim();
+        const email = document.getElementById("register-email").value.trim();
+        const password = document.getElementById("register-password").value;
+
+        if (!isUsernameValid(username)) {
+            alert("Please choose a valid username.");
+            return;
+        }
+
+        if (!email || !password) {
+            alert("Please enter your email and password.");
+            return;
+        }
+
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    username: username
+                }
+            }
+        });
+
+        if (error) {
+            alert(error.message);
+            return;
+        }
+
+        alert("Account created! Please check your email to confirm your account.");
+    });
+
+});
