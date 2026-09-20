@@ -644,7 +644,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             .from("posts")
             .select("*")
             .eq("deleted", false)
-            .order("created_at", { ascending: false });
+            .order("created_at", { ascending: false })
     .limit(20);
 
     if (error) {
