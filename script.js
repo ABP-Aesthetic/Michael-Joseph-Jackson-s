@@ -426,3 +426,73 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+document.addEventListener("DOMContentLoaded", function () {
+
+    const linkInput = document.getElementById("post-link");
+    const addLinkButton = document.getElementById("add-link-button");
+    const selectedLinks = document.getElementById("selected-links");
+
+    const linksList = [];
+
+    addLinkButton.addEventListener("click", function () {
+
+        const link = linkInput.value.trim();
+
+        if (!link) {
+            return;
+        }
+
+        linksList.push(link);
+
+        linkInput.value = "";
+
+        selectedLinks.innerHTML = "";
+
+        linksList.forEach(function (url, index) {
+
+            const linkRow = document.createElement("div");
+
+            const linkText = document.createElement("span");
+            linkText.textContent = url;
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.textContent = "✕";
+
+            removeButton.addEventListener("click", function () {
+                linksList.splice(index, 1);
+
+                selectedLinks.innerHTML = "";
+
+                linksList.forEach(function (url, newIndex) {
+
+                    const newRow = document.createElement("div");
+
+                    const newText = document.createElement("span");
+                    newText.textContent = url;
+
+                    const newRemoveButton = document.createElement("button");
+                    newRemoveButton.type = "button";
+                    newRemoveButton.textContent = "✕";
+
+                    newRemoveButton.addEventListener("click", function () {
+                        linksList.splice(newIndex, 1);
+                        newRow.remove();
+                    });
+
+                    newRow.appendChild(newText);
+                    newRow.appendChild(newRemoveButton);
+
+                    selectedLinks.appendChild(newRow);
+                });
+            });
+
+            linkRow.appendChild(linkText);
+            linkRow.appendChild(removeButton);
+
+            selectedLinks.appendChild(linkRow);
+        });
+
+    });
+
+});
