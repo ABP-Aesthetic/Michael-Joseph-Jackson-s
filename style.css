@@ -60,3 +60,9 @@
 .search-highlight {
     background-color: yellow;
 }
+
+#show-login,
+#show-register {
+    display: inline-block;
+    margin-right: 10px;
+}
