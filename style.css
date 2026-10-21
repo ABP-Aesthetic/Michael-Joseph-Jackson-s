@@ -71,3 +71,60 @@
 #register-form {
     margin-top: 20px;
 }
+/* --- ESTILO PINTEREST PARA LOS POSTS --- */
+#posts-container {
+    column-count: 3; /* Número de columnas. Pon 2 o 1 si lo ves muy apretado */
+    column-gap: 20px;
+    width: 100%;
+}
+
+article {
+    break-inside: avoid; /* Evita que un post se parta entre dos columnas */
+    margin-bottom: 20px;
+    background: #fdfdfd;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.post-thumbnail {
+    width: 100%;
+    border-radius: 10px;
+    margin-top: 10px;
+    cursor: pointer; /* Cambia el ratón a la manita para indicar que se puede hacer clic */
+    transition: transform 0.2s;
+}
+
+.post-thumbnail:hover {
+    transform: scale(1.02); /* Pequeño efecto al pasar el ratón */
+}
+
+.post-link {
+    display: block;
+    margin-top: 10px;
+    color: #ff6b6b;
+    text-decoration: none;
+    font-weight: bold;
+    word-break: break-all;
+}
+
+/* --- ESTILO PARA EL VISOR DE IMÁGENES GIGANTE --- */
+#image-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+#image-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
