@@ -697,6 +697,42 @@ cancelButton.addEventListener("click", function () {
         const saveButton = document.createElement("button");
 saveButton.textContent = "✅ Save";
 saveButton.type = "button";
+        // --- INICIO CÓDIGO BOTÓN GUARDAR ---
+        saveButton.addEventListener("click", async function () {
+            const newText = editArea.value.trim();
+
+            if (!newText) {
+                alert("The post cannot be empty, Moonwalker!");
+                return;
+            }
+
+            // Cambiamos el texto del botón mientras guarda para que el usuario espere
+            saveButton.textContent = "Saving...";
+            saveButton.disabled = true;
+
+            // 1. Guardamos el nuevo texto en Supabase
+            const { error: updateError } = await supabaseClient
+                .from("posts")
+                .update({ content: newText })
+                .eq("id", post.id);
+
+            if (updateError) {
+                alert("Oops! Could not update the post: " + updateError.message);
+                saveButton.textContent = "✅ Save";
+                saveButton.disabled = false;
+                return;
+            }
+
+            // 2. Si se guarda bien, actualizamos el texto en la pantalla
+            content.textContent = newText;
+            post.content = newText; // Actualizamos también el dato interno
+
+            // 3. Ocultamos el modo edición y volvemos a mostrar el post normal
+            editArea.remove();
+            editButtons.remove();
+            content.style.display = "block";
+        });
+        // --- FIN CÓDIGO BOTÓN GUARDAR ---
         const editButtons = document.createElement("div");
 editButtons.className = "edit-buttons";
 
