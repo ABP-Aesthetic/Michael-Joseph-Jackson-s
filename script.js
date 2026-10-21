@@ -635,17 +635,16 @@ document.getElementById("selected-links").innerHTML = "";
 
 });
 
+// --- INICIO CARGA DE POSTS CON IMÁGENES Y LINKS ---
 document.addEventListener("DOMContentLoaded", async function () {
-
     const postsContainer = document.getElementById("posts-container");
 
-    const { data: posts, error } =
-        await supabaseClient
-            .from("posts")
-            .select("*")
-            .eq("deleted", false)
-            .order("created_at", { ascending: false })
-    .limit(20);
+    const { data: posts, error } = await supabaseClient
+        .from("posts")
+        .select("*")
+        .eq("deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
 
     if (error) {
         postsContainer.textContent = "Could not load posts: " + error.message;
@@ -653,8 +652,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     const { data: { user } } = await supabaseClient.auth.getUser();
-    posts.forEach(function (post) {
 
+    // Vaciamos el contenedor por si había algo antes
+    postsContainer.innerHTML = "";
+
+    // Usamos for...of en lugar de forEach para poder pedir las imágenes a Supabase
+    for (const post of posts) {
         const postCard = document.createElement("article");
 
         const username = document.createElement("strong");
@@ -668,122 +671,161 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         postCard.appendChild(username);
         postCard.appendChild(content);
-        postCard.appendChild(date);
+
+        // 1. CARGAR IMÁGENES
+        const { data: media } = await supabaseClient
+            .from("post_media")
+            .select("*")
+            .eq("post_id", post.id);
+
+        if (media && media.length > 0) {
+            media.forEach(item => {
+                // Obtenemos la URL pública de la imagen
+                const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(item.file_path);
+                
+                const img = document.createElement("img");
+                img.src = urlData.publicUrl;
+                img.className = "post-thumbnail";
+                
+                // Función para hacerla en grande al hacer clic
+                img.addEventListener("click", function() {
+                    openModal(urlData.publicUrl);
+                });
+
+                postCard.appendChild(img);
+            });
+        }
+
+        // 2. CARGAR LINKS
+        const { data: links } = await supabaseClient
+            .from("post_links")
+            .select("*")
+            .eq("post_id", post.id);
+
+        if (links && links.length > 0) {
+            links.forEach(item => {
+                const link = document.createElement("a");
+                link.href = item.url;
+                link.textContent = "🔗 " + item.url;
+                link.target = "_blank"; // Abre en pestaña nueva
+                link.className = "post-link";
+                postCard.appendChild(link);
+            });
+        }
+
+        postCard.appendChild(date); // Ponemos la fecha debajo de todo
+
+        // --- BOTONES DE EDITAR Y BORRAR (Solo si eres el dueño) ---
         if (user && user.id === post.user_id) {
-    const editButton = document.createElement("button");
-    editButton.textContent = "✏️ Edit";
-    editButton.style.marginLeft = "10px";
+            const editButton = document.createElement("button");
+            editButton.textContent = "✏️ Edit";
+            editButton.style.marginLeft = "10px";
 
-    editButton.addEventListener("click", function () {
-        if (postCard.querySelector(".edit-area")) {
-    return;
-}
-        content.style.display = "none";
+            editButton.addEventListener("click", function () {
+                if (postCard.querySelector(".edit-area")) return;
+                
+                content.style.display = "none";
+                const editArea = document.createElement("textarea");
+                editArea.value = post.content;
+                editArea.style.display = "block";
+                editArea.style.width = "100%";
+                editArea.className = "edit-area";
 
-        const editArea = document.createElement("textarea");
-        editArea.value = post.content;
-        editArea.style.display = "block";
-        editArea.className = "edit-area";
-        const cancelButton = document.createElement("button");
-cancelButton.textContent = "❌ Cancel";
-cancelButton.type = "button";
+                const cancelButton = document.createElement("button");
+                cancelButton.textContent = "❌ Cancel";
+                cancelButton.type = "button";
+                cancelButton.addEventListener("click", function () {
+                    editArea.remove();
+                    editButtons.remove();
+                    content.style.display = "block";
+                });
 
-cancelButton.addEventListener("click", function () {
-    editArea.remove();
-    editButtons.remove();
-    content.style.display = "block";
-});
-
-        const saveButton = document.createElement("button");
-saveButton.textContent = "✅ Save";
-saveButton.type = "button";
-        // --- INICIO CÓDIGO BOTÓN GUARDAR ---
-        saveButton.addEventListener("click", async function () {
-            const newText = editArea.value.trim();
-
-            if (!newText) {
-                alert("The post cannot be empty, Moonwalker!");
-                return;
-            }
-
-            // Cambiamos el texto del botón mientras guarda para que el usuario espere
-            saveButton.textContent = "Saving...";
-            saveButton.disabled = true;
-
-            // 1. Guardamos el nuevo texto en Supabase
-            const { error: updateError } = await supabaseClient
-                .from("posts")
-                .update({ content: newText })
-                .eq("id", post.id);
-
-            if (updateError) {
-                alert("Oops! Could not update the post: " + updateError.message);
+                const saveButton = document.createElement("button");
                 saveButton.textContent = "✅ Save";
-                saveButton.disabled = false;
-                return;
-            }
+                saveButton.type = "button";
+                saveButton.addEventListener("click", async function () {
+                    const newText = editArea.value.trim();
+                    if (!newText) {
+                        alert("The post cannot be empty!");
+                        return;
+                    }
+                    saveButton.textContent = "Saving...";
+                    
+                    const { error: updateError } = await supabaseClient
+                        .from("posts")
+                        .update({ content: newText })
+                        .eq("id", post.id);
 
-            // 2. Si se guarda bien, actualizamos el texto en la pantalla
-            content.textContent = newText;
-            post.content = newText; // Actualizamos también el dato interno
+                    if (updateError) {
+                        alert("Error: " + updateError.message);
+                        saveButton.textContent = "✅ Save";
+                        return;
+                    }
+                    
+                    content.textContent = newText;
+                    editArea.remove();
+                    editButtons.remove();
+                    content.style.display = "block";
+                });
 
-            // 3. Ocultamos el modo edición y volvemos a mostrar el post normal
-            editArea.remove();
-            editButtons.remove();
-            content.style.display = "block";
-        });
-        // --- FIN CÓDIGO BOTÓN GUARDAR ---
-        const editButtons = document.createElement("div");
-editButtons.className = "edit-buttons";
+                const editButtons = document.createElement("div");
+                editButtons.className = "edit-buttons";
+                editButtons.appendChild(saveButton);
+                editButtons.appendChild(cancelButton);
 
-editButtons.appendChild(saveButton);
-editButtons.appendChild(cancelButton);
+                postCard.insertBefore(editArea, date);
+                postCard.insertBefore(editButtons, date);
+            });
+            postCard.appendChild(editButton);
 
-postCard.insertBefore(editButtons, date);
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "🗑️ Delete";
+            deleteButton.style.marginLeft = "10px";
+            deleteButton.addEventListener("click", async function () {
+                if (!confirm("Are you sure you want to delete this post, Moonwalker?")) return;
+                
+                const { error: deleteError } = await supabaseClient
+                    .from("posts")
+                    .update({ deleted: true })
+                    .eq("id", post.id);
 
-        editArea.style.width = "100%";
-
-        postCard.insertBefore(editArea, date);
-    });
-
-    postCard.appendChild(editButton);
-            // --- INICIO CÓDIGO BOTÓN ELIMINAR ---
-    const deleteButton = document.createElement("button");
-    deleteButton.textContent = "🗑️ Delete";
-    deleteButton.style.marginLeft = "10px";
-
-    deleteButton.addEventListener("click", async function () {
-        // 1. Comprobación (alerta de confirmación)
-        const confirmDelete = confirm("Are you sure you want to delete this post, Moonwalker?");
-        
-        // Si el usuario cancela, no hacemos nada
-        if (!confirmDelete) {
-            return;
+                if (deleteError) {
+                    alert("Error: " + deleteError.message);
+                    return;
+                }
+                postCard.remove();
+            });
+            postCard.appendChild(deleteButton);
         }
-
-        // 2. Actualizamos el post en Supabase para marcarlo como eliminado
-        const { error: deleteError } = await supabaseClient
-            .from("posts")
-            .update({ deleted: true })
-            .eq("id", post.id);
-
-        // Si hay un error, lo mostramos
-        if (deleteError) {
-            alert("Oops! Could not delete the post: " + deleteError.message);
-            return;
-        }
-
-        // 3. Si todo va bien, quitamos la tarjeta del post de la pantalla inmediatamente
-        postCard.remove();
-        alert("Post deleted successfully! ✨");
-    });
-
-    // Añadimos el botón de borrar a la tarjeta del post
-    postCard.appendChild(deleteButton);
-    // --- FIN CÓDIGO BOTÓN ELIMINAR ---
-}
 
         postsContainer.appendChild(postCard);
-    });
-
+    }
 });
+
+// --- FUNCIÓN PARA EL VISOR DE IMÁGENES GIGANTE ---
+function openModal(imageSrc) {
+    let modal = document.getElementById("image-modal");
+    
+    // Si el modal no existe, lo creamos de cero
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "image-modal";
+        modal.innerHTML = `
+            <img src="${imageSrc}" id="modal-image">
+            <span style="position:absolute; top:20px; right:30px; color:white; font-size:40px; cursor:pointer;">&times;</span>
+        `;
+        document.body.appendChild(modal);
+        
+        // Si haces clic fuera de la foto o en la X, se cierra
+        modal.addEventListener("click", function() {
+            modal.style.display = "none";
+        });
+    } else {
+        // Si ya existe, solo le cambiamos la foto
+        document.getElementById("modal-image").src = imageSrc;
+    }
+    
+    // Lo mostramos usando flex (para que se centre)
+    modal.style.display = "flex";
+}
+// --- FIN CARGA DE POSTS ---
