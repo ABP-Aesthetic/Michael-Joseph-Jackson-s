@@ -711,6 +711,40 @@ postCard.insertBefore(editButtons, date);
     });
 
     postCard.appendChild(editButton);
+            // --- INICIO CÓDIGO BOTÓN ELIMINAR ---
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "🗑️ Delete";
+    deleteButton.style.marginLeft = "10px";
+
+    deleteButton.addEventListener("click", async function () {
+        // 1. Comprobación (alerta de confirmación)
+        const confirmDelete = confirm("Are you sure you want to delete this post, Moonwalker?");
+        
+        // Si el usuario cancela, no hacemos nada
+        if (!confirmDelete) {
+            return;
+        }
+
+        // 2. Actualizamos el post en Supabase para marcarlo como eliminado
+        const { error: deleteError } = await supabaseClient
+            .from("posts")
+            .update({ deleted: true })
+            .eq("id", post.id);
+
+        // Si hay un error, lo mostramos
+        if (deleteError) {
+            alert("Oops! Could not delete the post: " + deleteError.message);
+            return;
+        }
+
+        // 3. Si todo va bien, quitamos la tarjeta del post de la pantalla inmediatamente
+        postCard.remove();
+        alert("Post deleted successfully! ✨");
+    });
+
+    // Añadimos el botón de borrar a la tarjeta del post
+    postCard.appendChild(deleteButton);
+    // --- FIN CÓDIGO BOTÓN ELIMINAR ---
 }
 
         postsContainer.appendChild(postCard);
