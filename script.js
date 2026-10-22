@@ -636,196 +636,168 @@ document.getElementById("selected-links").innerHTML = "";
 });
 
 // --- INICIO CARGA DE POSTS CON IMÁGENES Y LINKS ---
+// --- INICIO CARGA DE POSTS (CUADRÍCULA Y MODAL) ---
 document.addEventListener("DOMContentLoaded", async function () {
     const postsContainer = document.getElementById("posts-container");
 
-    const { data: posts, error } = await supabaseClient
-        .from("posts")
-        .select("*")
-        .eq("deleted", false)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-    if (error) {
-        postsContainer.textContent = "Could not load posts: " + error.message;
-        return;
+    // 1. Crear la estructura de la ventana gigante (Modal) si no existe
+    let postModal = document.getElementById("post-modal");
+    if (!postModal) {
+        postModal = document.createElement("div");
+        postModal.id = "post-modal";
+        postModal.innerHTML = `
+            <div class="post-modal-content">
+                <span class="close-modal" id="close-post-modal">&times;</span>
+                <div id="modal-post-body"></div>
+            </div>
+        `;
+        document.body.appendChild(postModal);
+        
+        document.getElementById("close-post-modal").addEventListener("click", () => postModal.style.display = "none");
+        postModal.addEventListener("click", (e) => { if (e.target === postModal) postModal.style.display = "none"; });
     }
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: posts, error } = await supabaseClient
+        .from("posts").select("*").eq("deleted", false).order("created_at", { ascending: false }).limit(20);
 
-    // Vaciamos el contenedor por si había algo antes
+    if (error) return postsContainer.textContent = "Error: " + error.message;
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
     postsContainer.innerHTML = "";
 
-    // Usamos for...of en lugar de forEach para poder pedir las imágenes a Supabase
     for (const post of posts) {
         const postCard = document.createElement("article");
+        postCard.className = "post-card";
+
+        const { data: media } = await supabaseClient.from("post_media").select("*").eq("post_id", post.id);
+        const { data: links } = await supabaseClient.from("post_links").select("*").eq("post_id", post.id);
+
+        // --- DISEÑO DE LA MINIATURA (TARJETA PEQUEÑA) ---
+        if (media && media.length > 0) {
+            const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(media[0].file_path);
+            
+            const previewContainer = document.createElement("div");
+            previewContainer.className = "media-preview";
+            
+            const img = document.createElement("img");
+            img.src = urlData.publicUrl;
+            previewContainer.appendChild(img);
+
+            // Si hay más de 1 foto, ponemos el cartel de +X
+            if (media.length > 1) {
+                const badge = document.createElement("div");
+                badge.className = "more-media-badge";
+                badge.textContent = "+" + (media.length - 1);
+                previewContainer.appendChild(badge);
+            }
+            postCard.appendChild(previewContainer);
+        }
 
         const username = document.createElement("strong");
         username.textContent = post.username;
-
+        username.style.marginBottom = "10px";
+        
         const content = document.createElement("p");
+        content.className = "post-text-preview";
         content.textContent = post.content;
-
-        const date = document.createElement("small");
-        date.textContent = new Date(post.created_at).toLocaleDateString();
 
         postCard.appendChild(username);
         postCard.appendChild(content);
 
-        // 1. CARGAR IMÁGENES
-        const { data: media } = await supabaseClient
-            .from("post_media")
-            .select("*")
-            .eq("post_id", post.id);
+        // --- ACCIÓN AL HACER CLIC: ABRIR EL POST COMPLETO ---
+        postCard.addEventListener("click", () => {
+            const modalBody = document.getElementById("modal-post-body");
+            modalBody.innerHTML = `
+                <h2 style="margin-top:0; color:#ff6b6b;">${post.username}</h2>
+                <p id="modal-text-${post.id}" style="font-size:1.1em; line-height:1.6;">${post.content}</p>
+                <div id="modal-media-container" style="display:flex; flex-direction:column; gap:15px; margin-top:20px;"></div>
+                <div id="modal-links-container" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;"></div>
+                <div id="modal-actions" style="margin-top:25px; padding-top:20px; border-top:1px solid #ddd;"></div>
+            `;
 
-        if (media && media.length > 0) {
-            media.forEach(item => {
-                // Obtenemos la URL pública de la imagen
-                const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(item.file_path);
-                
-                const img = document.createElement("img");
-                img.src = urlData.publicUrl;
-                img.className = "post-thumbnail";
-                
-                // Función para hacerla en grande al hacer clic
-                img.addEventListener("click", function() {
-                    openModal(urlData.publicUrl);
+            // Cargar TODAS las imágenes en grande
+            if (media) {
+                const mediaContainer = modalBody.querySelector("#modal-media-container");
+                media.forEach(m => {
+                    const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(m.file_path);
+                    const fullImg = document.createElement("img");
+                    fullImg.src = uData.publicUrl;
+                    fullImg.style.width = "100%";
+                    fullImg.style.borderRadius = "10px";
+                    mediaContainer.appendChild(fullImg);
                 });
+            }
 
-                postCard.appendChild(img);
-            });
-        }
-
-        // 2. CARGAR LINKS
-        const { data: links } = await supabaseClient
-            .from("post_links")
-            .select("*")
-            .eq("post_id", post.id);
-
-        if (links && links.length > 0) {
-            links.forEach(item => {
-                const link = document.createElement("a");
-                link.href = item.url;
-                link.textContent = "🔗 " + item.url;
-                link.target = "_blank"; // Abre en pestaña nueva
-                link.className = "post-link";
-                postCard.appendChild(link);
-            });
-        }
-
-        postCard.appendChild(date); // Ponemos la fecha debajo de todo
-
-        // --- BOTONES DE EDITAR Y BORRAR (Solo si eres el dueño) ---
-        if (user && user.id === post.user_id) {
-            const editButton = document.createElement("button");
-            editButton.textContent = "✏️ Edit";
-            editButton.style.marginLeft = "10px";
-
-            editButton.addEventListener("click", function () {
-                if (postCard.querySelector(".edit-area")) return;
-                
-                content.style.display = "none";
-                const editArea = document.createElement("textarea");
-                editArea.value = post.content;
-                editArea.style.display = "block";
-                editArea.style.width = "100%";
-                editArea.className = "edit-area";
-
-                const cancelButton = document.createElement("button");
-                cancelButton.textContent = "❌ Cancel";
-                cancelButton.type = "button";
-                cancelButton.addEventListener("click", function () {
-                    editArea.remove();
-                    editButtons.remove();
-                    content.style.display = "block";
+            // Cargar TODOS los enlaces
+            if (links) {
+                const linksContainer = modalBody.querySelector("#modal-links-container");
+                links.forEach(l => {
+                    const a = document.createElement("a");
+                    a.href = l.url;
+                    a.textContent = "🔗 " + l.url;
+                    a.target = "_blank";
+                    a.style.color = "#0066cc";
+                    a.style.fontWeight = "bold";
+                    a.style.wordBreak = "break-all";
+                    linksContainer.appendChild(a);
                 });
+            }
 
-                const saveButton = document.createElement("button");
-                saveButton.textContent = "✅ Save";
-                saveButton.type = "button";
-                saveButton.addEventListener("click", async function () {
-                    const newText = editArea.value.trim();
-                    if (!newText) {
-                        alert("The post cannot be empty!");
-                        return;
-                    }
-                    saveButton.textContent = "Saving...";
+            // Botones de edición si el post es tuyo
+            if (user && user.id === post.user_id) {
+                const actionsContainer = modalBody.querySelector("#modal-actions");
+                
+                // Editar Texto
+                const editBtn = document.createElement("button");
+                editBtn.textContent = "✏️ Edit Text";
+                editBtn.style.marginRight = "10px";
+                editBtn.onclick = () => {
+                    const currentTextP = modalBody.querySelector(`#modal-text-${post.id}`);
+                    if(!currentTextP) return;
                     
-                    const { error: updateError } = await supabaseClient
-                        .from("posts")
-                        .update({ content: newText })
-                        .eq("id", post.id);
-
-                    if (updateError) {
-                        alert("Error: " + updateError.message);
-                        saveButton.textContent = "✅ Save";
-                        return;
-                    }
+                    const textArea = document.createElement("textarea");
+                    textArea.value = post.content;
+                    textArea.style.width = "100%";
+                    textArea.style.height = "120px";
                     
-                    content.textContent = newText;
-                    editArea.remove();
-                    editButtons.remove();
-                    content.style.display = "block";
-                });
-
-                const editButtons = document.createElement("div");
-                editButtons.className = "edit-buttons";
-                editButtons.appendChild(saveButton);
-                editButtons.appendChild(cancelButton);
-
-                postCard.insertBefore(editArea, date);
-                postCard.insertBefore(editButtons, date);
-            });
-            postCard.appendChild(editButton);
-
-            const deleteButton = document.createElement("button");
-            deleteButton.textContent = "🗑️ Delete";
-            deleteButton.style.marginLeft = "10px";
-            deleteButton.addEventListener("click", async function () {
-                if (!confirm("Are you sure you want to delete this post, Moonwalker?")) return;
+                    const saveBtn = document.createElement("button");
+                    saveBtn.textContent = "✅ Save";
+                    saveBtn.onclick = async () => {
+                        const newText = textArea.value.trim();
+                        if(!newText) return;
+                        saveBtn.textContent = "Saving...";
+                        const { error: updErr } = await supabaseClient.from("posts").update({ content: newText }).eq("id", post.id);
+                        if(updErr) { alert("Error: " + updErr.message); saveBtn.textContent = "✅ Save"; return; }
+                        
+                        post.content = newText;
+                        content.textContent = newText; // Actualiza la tarjeta pequeña
+                        currentTextP.textContent = newText; // Actualiza el modal
+                        textArea.replaceWith(currentTextP);
+                        saveBtn.remove();
+                    };
+                    
+                    currentTextP.replaceWith(textArea);
+                    actionsContainer.appendChild(saveBtn);
+                };
                 
-                const { error: deleteError } = await supabaseClient
-                    .from("posts")
-                    .update({ deleted: true })
-                    .eq("id", post.id);
-
-                if (deleteError) {
-                    alert("Error: " + deleteError.message);
-                    return;
-                }
-                postCard.remove();
-            });
-            postCard.appendChild(deleteButton);
-        }
+                // Eliminar Post
+                const delBtn = document.createElement("button");
+                delBtn.textContent = "🗑️ Delete Post";
+                delBtn.onclick = async () => {
+                    if(!confirm("Are you sure you want to delete this post?")) return;
+                    await supabaseClient.from("posts").update({ deleted: true }).eq("id", post.id);
+                    postCard.remove();
+                    postModal.style.display = "none";
+                };
+                
+                actionsContainer.appendChild(editBtn);
+                actionsContainer.appendChild(delBtn);
+            }
+            
+            postModal.style.display = "flex";
+        });
 
         postsContainer.appendChild(postCard);
     }
 });
-
-// --- FUNCIÓN PARA EL VISOR DE IMÁGENES GIGANTE ---
-function openModal(imageSrc) {
-    let modal = document.getElementById("image-modal");
-    
-    // Si el modal no existe, lo creamos de cero
-    if (!modal) {
-        modal = document.createElement("div");
-        modal.id = "image-modal";
-        modal.innerHTML = `
-            <img src="${imageSrc}" id="modal-image">
-            <span style="position:absolute; top:20px; right:30px; color:white; font-size:40px; cursor:pointer;">&times;</span>
-        `;
-        document.body.appendChild(modal);
-        
-        // Si haces clic fuera de la foto o en la X, se cierra
-        modal.addEventListener("click", function() {
-            modal.style.display = "none";
-        });
-    } else {
-        // Si ya existe, solo le cambiamos la foto
-        document.getElementById("modal-image").src = imageSrc;
-    }
-    
-    // Lo mostramos usando flex (para que se centre)
-    modal.style.display = "flex";
-}
-// --- FIN CARGA DE POSTS ---
+// --- FIN NUEVA CARGA DE POSTS ---
