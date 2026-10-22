@@ -651,7 +651,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // --- INICIO CARGA DE POSTS CON IMÁGENES Y LINKS ---
-// --- INICIO CARGA DE POSTS (SISTEMA COMPLETO CON EDICIÓN DE POSTS Y COMENTARIOS) ---
+// --- INICIO CARGA DE POSTS (SISTEMA COMPLETO CON EDICIÓN DE LINKS Y ADJUNTOS EN COMENTARIOS) ---
 document.addEventListener("DOMContentLoaded", async function () {
     const postsContainer = document.getElementById("posts-container");
 
@@ -691,7 +691,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
-        // MINIATURA DE TARJETA
         if (media && media.length > 0) {
             const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(media[0].file_path);
             const firstFile = media[0];
@@ -739,7 +738,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         postCard.appendChild(dateSpan);
         postCard.appendChild(content);
 
-        // MENÚ DE TRES PUNTOS
         const menuBtn = document.createElement("button");
         menuBtn.textContent = "⋮";
         menuBtn.style.cssText = "position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); border:none; font-size:1.4em; cursor:pointer; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; z-index:5;";
@@ -822,7 +820,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             </div>
         `;
 
-        // REACCIONES POST
         const { data: reactions } = await supabaseClient.from("post_reactions").select("*").eq("post_id", post.id);
         const likes = reactions ? reactions.filter(r => r.type === 'like') : [];
         const dislikes = reactions ? reactions.filter(r => r.type === 'dislike') : [];
@@ -842,7 +839,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         likeBtn.onclick = async () => { await togglePostReaction(post.id, 'like'); openPostModal(post, media, links, postDate); };
         dislikeBtn.onclick = async () => { await togglePostReaction(post.id, 'dislike'); openPostModal(post, media, links, postDate); };
 
-        // MOSTRAR ARCHIVOS Y LINKS EN MODAL
         if (media) {
             const mediaContainer = modalBody.querySelector("#modal-media-container");
             media.forEach(m => {
@@ -887,11 +883,12 @@ document.addEventListener("DOMContentLoaded", async function () {
                 a.href = l.url;
                 a.textContent = "🔗 " + l.url;
                 a.target = "_blank";
+                a.setAttribute("data-link-id", l.id);
                 linksContainer.appendChild(a);
             });
         }
 
-        // AQUÍ ESTÁN NUEVAMENTE LOS BOTONES DE EDITAR Y BORRAR POST
+        // EDICIÓN DE POSTS COMPLETA (TEXTO, FOTOS Y LINKS)
         if (user && user.id === post.user_id) {
             const actionsContainer = modalBody.querySelector("#modal-actions");
             
@@ -934,15 +931,17 @@ document.addEventListener("DOMContentLoaded", async function () {
                     });
                 }
 
+                // Permite eliminar links existentes en el post
                 if (links && links.length > 0) {
-                    linksContainer.querySelectorAll("a").forEach((aTag, idx) => {
-                        const l = links[idx];
-                        if (!l) return;
+                    linksContainer.querySelectorAll("a").forEach((aTag) => {
+                        const lId = aTag.getAttribute("data-link-id");
+                        if (!lId || aTag.querySelector(".del-link-btn")) return;
                         const delLinkBtn = document.createElement("button");
+                        delLinkBtn.className = "del-link-btn";
                         delLinkBtn.textContent = "✕";
                         delLinkBtn.style.cssText = "margin-left:10px; background:#ff4d4d; color:white; border:none; border-radius:3px; cursor:pointer;";
                         delLinkBtn.onclick = () => {
-                            linksToDelete.push(l.id);
+                            linksToDelete.push(lId);
                             aTag.style.textDecoration = "line-through";
                             delLinkBtn.disabled = true;
                         };
@@ -950,6 +949,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     });
                 }
 
+                // Caja para añadir fotos nuevas en la edición del post
                 const dropZoneEdit = document.createElement("div");
                 dropZoneEdit.style.cssText = "border: 2px dashed #ccc; padding: 10px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 10px;";
                 dropZoneEdit.innerHTML = "📁 Drag new files here or click";
@@ -964,6 +964,25 @@ document.addEventListener("DOMContentLoaded", async function () {
                 fileInputEdit.onchange = (e) => {
                     editFilesList.push(...Array.from(e.target.files));
                     editFilesPreview.textContent = editFilesList.map(f => f.name).join(", ");
+                };
+
+                // Añadir links nuevos en la edición del post
+                const newLinkBox = document.createElement("div");
+                newLinkBox.style.cssText = "display:flex; gap:10px; margin-top:10px;";
+                newLinkBox.innerHTML = `
+                    <input type="url" class="new-post-link-in" placeholder="Add new link..." style="flex:1; padding:5px;">
+                    <button type="button" class="add-new-post-link-btn">🔗 Add</button>
+                `;
+                const newLinksPreview = document.createElement("div");
+                newLinksPreview.style.fontSize = "0.85em";
+
+                newLinkBox.querySelector(".add-new-post-link-btn").onclick = () => {
+                    const lVal = newLinkBox.querySelector(".new-post-link-in").value.trim();
+                    if (lVal) {
+                        editLinksList.push(lVal);
+                        newLinkBox.querySelector(".new-post-link-in").value = "";
+                        newLinksPreview.textContent = editLinksList.join(", ");
+                    }
                 };
 
                 const saveAllBtn = document.createElement("button");
@@ -991,6 +1010,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                             post_id: post.id, file_path: filePath, file_type: file.type, original_name: file.name
                         });
                     }
+                    for (const url of editLinksList) {
+                        await supabaseClient.from("post_links").insert({ post_id: post.id, url: url });
+                    }
 
                     alert("Post updated! ✨");
                     location.reload();
@@ -999,6 +1021,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                 actionsContainer.appendChild(dropZoneEdit);
                 actionsContainer.appendChild(fileInputEdit);
                 actionsContainer.appendChild(editFilesPreview);
+                actionsContainer.appendChild(newLinkBox);
+                actionsContainer.appendChild(newLinksPreview);
                 actionsContainer.appendChild(saveAllBtn);
             };
 
@@ -1016,7 +1040,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         loadComments(post.id);
 
-        // PUBLICAR COMENTARIO PRINCIPAL
         let commentFiles = [];
         let commentLinks = [];
 
@@ -1102,7 +1125,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    // RENDERIZAR COMENTARIOS Y RESPUESTAS RECURSIVAMENTE (INFINITO) CON ADJUNTOS, EDICIÓN Y BORRADO
+    // RENDERIZAR Y EDITAR COMENTARIOS / RESPUESTAS (INCLUYENDO SUS ARCHIVOS Y LINKS)
     async function renderCommentTree(comment, allComments) {
         const container = document.createElement("div");
         container.style.cssText = "background:#fff; border:1px solid #eee; padding:12px; border-radius:8px;";
@@ -1118,47 +1141,63 @@ document.addEventListener("DOMContentLoaded", async function () {
         container.appendChild(head);
         container.appendChild(body);
 
-        // MEDIA DEL COMENTARIO
-        const { data: cMedia } = await supabaseClient.from("comment_media").select("*").eq("comment_id", comment.id);
-        if (cMedia && cMedia.length > 0) {
-            const mBox = document.createElement("div");
-            mBox.style.cssText = "display:flex; flex-direction:column; gap:8px; margin:8px 0;";
-            cMedia.forEach(m => {
-                const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(m.file_path);
-                if (m.file_type?.startsWith("image/")) {
-                    const img = document.createElement("img");
-                    img.src = uData.publicUrl;
-                    img.style.maxWidth = "200px";
-                    img.style.borderRadius = "5px";
-                    mBox.appendChild(img);
-                } else if (m.file_type?.startsWith("video/")) {
-                    const vid = document.createElement("video");
-                    vid.src = uData.publicUrl;
-                    vid.controls = true;
-                    vid.style.maxWidth = "250px";
-                    mBox.appendChild(vid);
-                } else if (m.file_type?.startsWith("audio/")) {
-                    const aud = document.createElement("audio");
-                    aud.src = uData.publicUrl;
-                    aud.controls = true;
-                    mBox.appendChild(aud);
-                }
-            });
-            container.appendChild(mBox);
+        const mediaBox = document.createElement("div");
+        mediaBox.className = "comment-media-box";
+        container.appendChild(mediaBox);
+
+        const linksBox = document.createElement("div");
+        linksBox.className = "comment-links-box";
+        container.appendChild(linksBox);
+
+        async function refreshCommentAttachments() {
+            mediaBox.innerHTML = "";
+            linksBox.innerHTML = "";
+
+            const { data: cMedia } = await supabaseClient.from("comment_media").select("*").eq("comment_id", comment.id);
+            if (cMedia && cMedia.length > 0) {
+                cMedia.forEach(m => {
+                    const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(m.file_path);
+                    const itemWrap = document.createElement("div");
+                    itemWrap.setAttribute("data-cmedia-id", m.id);
+
+                    if (m.file_type?.startsWith("image/")) {
+                        const img = document.createElement("img");
+                        img.src = uData.publicUrl;
+                        img.style.cssText = "max-width:200px; border-radius:5px; display:block;";
+                        itemWrap.appendChild(img);
+                    } else if (m.file_type?.startsWith("video/")) {
+                        const vid = document.createElement("video");
+                        vid.src = uData.publicUrl;
+                        vid.controls = true;
+                        vid.style.cssText = "max-width:250px; display:block;";
+                        itemWrap.appendChild(vid);
+                    } else if (m.file_type?.startsWith("audio/")) {
+                        const aud = document.createElement("audio");
+                        aud.src = uData.publicUrl;
+                        aud.controls = true;
+                        itemWrap.appendChild(aud);
+                    }
+                    mediaBox.appendChild(itemWrap);
+                });
+            }
+
+            const { data: cLinks } = await supabaseClient.from("comment_links").select("*").eq("comment_id", comment.id);
+            if (cLinks && cLinks.length > 0) {
+                cLinks.forEach(l => {
+                    const aWrap = document.createElement("div");
+                    aWrap.setAttribute("data-clink-id", l.id);
+                    const a = document.createElement("a");
+                    a.href = l.url;
+                    a.target = "_blank";
+                    a.textContent = "🔗 " + l.url;
+                    a.style.cssText = "font-size:0.85em; color:#0066cc;";
+                    aWrap.appendChild(a);
+                    linksBox.appendChild(aWrap);
+                });
+            }
         }
 
-        // LINKS DEL COMENTARIO
-        const { data: cLinks } = await supabaseClient.from("comment_links").select("*").eq("comment_id", comment.id);
-        if (cLinks && cLinks.length > 0) {
-            cLinks.forEach(l => {
-                const a = document.createElement("a");
-                a.href = l.url;
-                a.target = "_blank";
-                a.textContent = "🔗 " + l.url;
-                a.style.cssText = "display:block; font-size:0.85em; color:#0066cc;";
-                container.appendChild(a);
-            });
-        }
+        await refreshCommentAttachments();
 
         // REACCIONES EN COMENTARIO
         const { data: cReactions } = await supabaseClient.from("comment_reactions").select("*").eq("comment_id", comment.id);
@@ -1204,23 +1243,127 @@ document.addEventListener("DOMContentLoaded", async function () {
         reactBar.appendChild(dislikeBtn);
         reactBar.appendChild(replyBtn);
 
-        // EDITAR Y BORRAR COMENTARIO (SI ES DEL AUTOR)
+        // EDICIÓN AVANZADA DE COMENTARIO (TEXTO + BORRAR/AÑADIR MULTIMEDIA Y LINKS)
         if (user && user.id === comment.user_id) {
             const editCBtn = document.createElement("span");
             editCBtn.textContent = "✏️ Edit";
             editCBtn.style.cssText = "cursor:pointer; color:#0066cc;";
-            editCBtn.onclick = () => {
+            
+            editCBtn.onclick = async () => {
                 const editBox = document.createElement("div");
-                editBox.style.marginTop = "8px";
+                editBox.style.cssText = "margin-top:8px; background:#f0f0f0; padding:10px; border-radius:5px;";
+                
+                let cMediaDel = [];
+                let cLinksDel = [];
+                let newCFiles = [];
+                let newCLinks = [];
+
+                // Botones para borrar fotos existentes del comentario
+                const { data: currentCMedia } = await supabaseClient.from("comment_media").select("*").eq("comment_id", comment.id);
+                if (currentCMedia) {
+                    currentCMedia.forEach(m => {
+                        const targetWrap = mediaBox.querySelector(`[data-cmedia-id="${m.id}"]`);
+                        if (targetWrap && !targetWrap.querySelector(".del-cmedia-btn")) {
+                            const btn = document.createElement("button");
+                            btn.className = "del-cmedia-btn";
+                            btn.textContent = "✕ Delete file";
+                            btn.style.cssText = "background:red; color:white; border:none; padding:2px 5px; cursor:pointer;";
+                            btn.onclick = () => {
+                                cMediaDel.push(m);
+                                targetWrap.style.opacity = "0.3";
+                                btn.disabled = true;
+                            };
+                            targetWrap.appendChild(btn);
+                        }
+                    });
+                }
+
+                // Botones para borrar links existentes del comentario
+                const { data: currentCLinks } = await supabaseClient.from("comment_links").select("*").eq("comment_id", comment.id);
+                if (currentCLinks) {
+                    currentCLinks.forEach(l => {
+                        const targetWrap = linksBox.querySelector(`[data-clink-id="${l.id}"]`);
+                        if (targetWrap && !targetWrap.querySelector(".del-clink-btn")) {
+                            const btn = document.createElement("button");
+                            btn.className = "del-clink-btn";
+                            btn.textContent = "✕";
+                            btn.style.cssText = "margin-left:5px; background:red; color:white; border:none; cursor:pointer;";
+                            btn.onclick = () => {
+                                cLinksDel.push(l.id);
+                                targetWrap.style.textDecoration = "line-through";
+                                btn.disabled = true;
+                            };
+                            targetWrap.appendChild(btn);
+                        }
+                    });
+                }
+
                 editBox.innerHTML = `
-                    <input type="text" class="edit-c-input" value="${comment.content}" style="width:70%; padding:5px;">
-                    <button class="save-c-btn">Save</button>
+                    <input type="text" class="edit-c-input" value="${comment.content}" style="width:100%; padding:5px; box-sizing:border-box;">
+                    <div style="display:flex; gap:10px; margin-top:8px; align-items:center;">
+                        <input type="file" class="edit-c-file-in" multiple style="display:none;">
+                        <button type="button" class="edit-c-file-btn">📁 Add Media</button>
+                        <input type="url" class="edit-c-link-in" placeholder="Add link..." style="flex:1; padding:4px;">
+                        <button type="button" class="edit-c-link-btn">🔗 Link</button>
+                    </div>
+                    <div class="edit-c-files-prev" style="font-size:0.8em; margin-top:4px;"></div>
+                    <div class="edit-c-links-prev" style="font-size:0.8em; margin-top:4px;"></div>
+                    <button class="save-c-btn" style="margin-top:8px; padding:5px 10px; background:#ff6b6b; color:white; border:none; cursor:pointer;">Save</button>
                 `;
+
+                const cFileIn = editBox.querySelector(".edit-c-file-in");
+                const cFileBtn = editBox.querySelector(".edit-c-file-btn");
+                const cFilesPrev = editBox.querySelector(".edit-c-files-prev");
+
+                cFileBtn.onclick = () => cFileIn.click();
+                cFileIn.onchange = (e) => {
+                    newCFiles.push(...Array.from(e.target.files));
+                    cFilesPrev.textContent = newCFiles.map(f => f.name).join(", ");
+                };
+
+                const cLinkIn = editBox.querySelector(".edit-c-link-in");
+                const cLinkBtn = editBox.querySelector(".edit-c-link-btn");
+                const cLinksPrev = editBox.querySelector(".edit-c-links-prev");
+
+                cLinkBtn.onclick = () => {
+                    const val = cLinkIn.value.trim();
+                    if (val) {
+                        newCLinks.push(val);
+                        cLinkIn.value = "";
+                        cLinksPrev.textContent = newCLinks.join(", ");
+                    }
+                };
+
                 body.replaceWith(editBox);
+
                 editBox.querySelector(".save-c-btn").onclick = async () => {
                     const newCVal = editBox.querySelector(".edit-c-input").value.trim();
                     if (!newCVal) return;
+
                     await supabaseClient.from("post_comments").update({ content: newCVal }).eq("id", comment.id);
+
+                    for (const m of cMediaDel) {
+                        await supabaseClient.from("comment_media").delete().eq("id", m.id);
+                        await supabaseClient.storage.from("post-media").remove([m.file_path]);
+                    }
+
+                    for (const lId of cLinksDel) {
+                        await supabaseClient.from("comment_links").delete().eq("id", lId);
+                    }
+
+                    for (const file of newCFiles) {
+                        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+                        const filePath = `comments/${user.id}/${crypto.randomUUID()}-${safeName}`;
+                        await supabaseClient.storage.from("post-media").upload(filePath, file);
+                        await supabaseClient.from("comment_media").insert({
+                            comment_id: comment.id, file_path: filePath, file_type: file.type, original_name: file.name
+                        });
+                    }
+
+                    for (const url of newCLinks) {
+                        await supabaseClient.from("comment_links").insert({ comment_id: comment.id, url: url });
+                    }
+
                     loadComments(comment.post_id);
                 };
             };
@@ -1240,7 +1383,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         container.appendChild(reactBar);
 
-        // CAJA DE RESPUESTA COMPLETA (CON ARCHIVOS Y LINKS)
         const replyBox = document.createElement("div");
         replyBox.style.cssText = "display:none; margin-top:10px; background:#f4f4f4; padding:10px; border-radius:5px;";
         replyBox.innerHTML = `
@@ -1299,7 +1441,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             loadComments(comment.post_id);
         };
 
-        // RESPUESTAS ANIDADAS (INFINITAS RECURSIVAS)
         const replies = allComments.filter(c => c.parent_comment_id === comment.id);
         if (replies.length > 0) {
             const repliesContainer = document.createElement("div");
