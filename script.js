@@ -686,15 +686,31 @@ document.addEventListener("DOMContentLoaded", async function () {
         const { data: media } = await supabaseClient.from("post_media").select("*").eq("post_id", post.id);
         const { data: links } = await supabaseClient.from("post_links").select("*").eq("post_id", post.id);
 
+        // MINIATURA DE LA TARJETA PEQUEÑA
         if (media && media.length > 0) {
             const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(media[0].file_path);
+            const firstFile = media[0];
             
             const previewContainer = document.createElement("div");
             previewContainer.className = "media-preview";
             
-            const img = document.createElement("img");
-            img.src = urlData.publicUrl;
-            previewContainer.appendChild(img);
+            // Mostrar imagen, vídeo o icono de audio en la tarjeta exterior
+            if (firstFile.file_type && firstFile.file_type.startsWith("video/")) {
+                const video = document.createElement("video");
+                video.src = urlData.publicUrl;
+                video.muted = true;
+                video.style.width = "100%";
+                previewContainer.appendChild(video);
+            } else if (firstFile.file_type && firstFile.file_type.startsWith("audio/")) {
+                const audioBox = document.createElement("div");
+                audioBox.style.cssText = "padding:20px; background:#f0f0f0; text-align:center; border-radius:8px;";
+                audioBox.textContent = "🎵 Audio file";
+                previewContainer.appendChild(audioBox);
+            } else {
+                const img = document.createElement("img");
+                img.src = urlData.publicUrl;
+                previewContainer.appendChild(img);
+            }
 
             if (media.length > 1) {
                 const badge = document.createElement("div");
@@ -716,6 +732,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         postCard.appendChild(username);
         postCard.appendChild(content);
 
+        // ABRIR MODAL COMPLETO
         postCard.addEventListener("click", () => {
             const modalBody = document.getElementById("modal-post-body");
             modalBody.innerHTML = `
@@ -726,21 +743,52 @@ document.addEventListener("DOMContentLoaded", async function () {
                 <div id="modal-actions" style="margin-top:25px; padding-top:20px; border-top:1px solid #ddd;"></div>
             `;
 
+            // VISUALIZACIÓN MULTIMEDIA EN EL MODAL
             if (media) {
                 const mediaContainer = modalBody.querySelector("#modal-media-container");
                 media.forEach(m => {
                     const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(m.file_path);
                     const wrapper = document.createElement("div");
                     wrapper.setAttribute("data-media-id", m.id);
-                    const fullImg = document.createElement("img");
-                    fullImg.src = uData.publicUrl;
-                    fullImg.style.width = "100%";
-                    fullImg.style.borderRadius = "10px";
-                    wrapper.appendChild(fullImg);
+                    const fileType = m.file_type || "";
+
+                    if (fileType.startsWith("image/")) {
+                        // Imagen
+                        const fullImg = document.createElement("img");
+                        fullImg.src = uData.publicUrl;
+                        fullImg.style.width = "100%";
+                        fullImg.style.borderRadius = "10px";
+                        wrapper.appendChild(fullImg);
+                    } else if (fileType.startsWith("video/")) {
+                        // Vídeo (mp4, webm, etc.)
+                        const video = document.createElement("video");
+                        video.src = uData.publicUrl;
+                        video.controls = true;
+                        video.style.width = "100%";
+                        video.style.borderRadius = "10px";
+                        wrapper.appendChild(video);
+                    } else if (fileType.startsWith("audio/")) {
+                        // Audio (mp3, m4a, wav, etc.)
+                        const audio = document.createElement("audio");
+                        audio.src = uData.publicUrl;
+                        audio.controls = true;
+                        audio.style.width = "100%";
+                        wrapper.appendChild(audio);
+                    } else {
+                        // Otros archivos (documentos, HTML, etc.) -> Enlace para abrir/descargar
+                        const fileLink = document.createElement("a");
+                        fileLink.href = uData.publicUrl;
+                        fileLink.target = "_blank";
+                        fileLink.textContent = "📄 " + (m.original_name || "View/Download file");
+                        fileLink.style.cssText = "display:inline-block; padding:10px; background:#eef; border-radius:5px; color:#0066cc; text-decoration:none;";
+                        wrapper.appendChild(fileLink);
+                    }
+
                     mediaContainer.appendChild(wrapper);
                 });
             }
 
+            // ENLACES EXTERNOS
             if (links) {
                 const linksContainer = modalBody.querySelector("#modal-links-container");
                 links.forEach(l => {
@@ -755,6 +803,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 });
             }
 
+            // BOTONES DE EDICIÓN
             if (user && user.id === post.user_id) {
                 const actionsContainer = modalBody.querySelector("#modal-actions");
                 
@@ -774,7 +823,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     let editFilesList = [];
                     let editLinksList = [];
 
-                    // 1. TEXTO
                     const textArea = document.createElement("textarea");
                     textArea.value = post.content;
                     textArea.style.width = "100%";
@@ -782,7 +830,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     textArea.style.marginBottom = "15px";
                     currentTextP.replaceWith(textArea);
 
-                    // 2. ELIMINAR FOTOS EXISTENTES
                     if (media && media.length > 0) {
                         media.forEach(m => {
                             const wrapper = mediaContainer.querySelector(`[data-media-id="${m.id}"]`);
@@ -791,7 +838,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 const delBtn = document.createElement("button");
                                 delBtn.className = "edit-del-btn";
                                 delBtn.textContent = "✕ Remove";
-                                delBtn.style.cssText = "position:absolute; top:10px; right:10px; background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;";
+                                delBtn.style.cssText = "position:absolute; top:10px; right:10px; background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; z-index:10;";
                                 
                                 delBtn.onclick = () => {
                                     mediaToDelete.push(m);
@@ -804,7 +851,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                         });
                     }
 
-                    // 3. ELIMINAR LINKS EXISTENTES
                     if (links && links.length > 0) {
                         linksContainer.querySelectorAll("a").forEach((aTag, idx) => {
                             const l = links[idx];
@@ -823,7 +869,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                         });
                     }
 
-                    // 4. ARRASTRAR ARCHIVOS NUEVOS (IDÉNTICO AL CREADOR)
                     const dropZoneEdit = document.createElement("div");
                     dropZoneEdit.style.cssText = "border: 2px dashed #ccc; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 15px; background: #fafafa;";
                     dropZoneEdit.innerHTML = "<p style='margin:0;'>💾 Upload files or Drag & drop files here</p>";
@@ -831,7 +876,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     const fileInputEdit = document.createElement("input");
                     fileInputEdit.type = "file";
                     fileInputEdit.multiple = true;
-                    fileInputEdit.accept = "image/*,video/*,audio/*";
+                    fileInputEdit.accept = "*/*";
                     fileInputEdit.style.display = "none";
 
                     const editFilesPreview = document.createElement("div");
@@ -867,7 +912,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                         renderEditFiles();
                     };
 
-                    // 5. AÑADIR LINKS NUEVOS (IDÉNTICO AL CREADOR)
                     const linkSection = document.createElement("div");
                     linkSection.style.marginTop = "15px";
                     linkSection.innerHTML = `
@@ -912,7 +956,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                         }
                     };
 
-                    // 6. BOTÓN GUARDAR CAMBIOS
                     const saveAllBtn = document.createElement("button");
                     saveAllBtn.textContent = "✅ Save Changes";
                     saveAllBtn.style.cssText = "margin-top: 20px; padding: 10px 20px; background-color: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;";
@@ -925,21 +968,17 @@ document.addEventListener("DOMContentLoaded", async function () {
                         saveAllBtn.textContent = "Saving...";
 
                         try {
-                            // Actualizar texto
                             await supabaseClient.from("posts").update({ content: newText }).eq("id", post.id);
 
-                            // Borrar imágenes marcadas
                             for (const m of mediaToDelete) {
                                 await supabaseClient.from("post_media").delete().eq("id", m.id);
                                 await supabaseClient.storage.from("post-media").remove([m.file_path]);
                             }
 
-                            // Borrar enlaces marcados
                             for (const linkId of linksToDelete) {
                                 await supabaseClient.from("post_links").delete().eq("id", linkId);
                             }
 
-                            // Subir fotos o archivos nuevos
                             for (const file of editFilesList) {
                                 const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]/g, "_");
                                 const filePath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
@@ -955,7 +994,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 });
                             }
 
-                            // Insertar enlaces nuevos
                             for (const url of editLinksList) {
                                 await supabaseClient.from("post_links").insert({
                                     post_id: post.id,
@@ -976,7 +1014,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     actionsContainer.appendChild(saveAllBtn);
                 };
 
-                // Botón Borrar Post
                 const delBtn = document.createElement("button");
                 delBtn.textContent = "🗑️ Delete Post";
                 delBtn.onclick = async () => {
