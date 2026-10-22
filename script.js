@@ -529,109 +529,124 @@ document.addEventListener("DOMContentLoaded", function () {
     const publishButton = document.getElementById("publish-post-button");
     const postContent = document.getElementById("post-content");
 
-    publishButton.addEventListener("click", async function () {
+    if (publishButton) {
+        publishButton.addEventListener("click", async function () {
 
-        const content = postContent.value.trim();
+            const content = postContent.value.trim();
 
-        if (!content) {
-            alert("Please write something before publishing.");
-            return;
-        }
+            if (!content) {
+                alert("Please write something before publishing.");
+                return;
+            }
 
-        const { data: { user }, error: userError } =
-            await supabaseClient.auth.getUser();
+            // Desactivar el botón para que no envíe publicaciones dobles/triples
+            publishButton.disabled = true;
+            publishButton.textContent = "Publishing...";
 
-        if (userError || !user) {
-            alert("You must be logged in to publish a post.");
-            return;
-        }
+            try {
+                const { data: { user }, error: userError } =
+                    await supabaseClient.auth.getUser();
 
-        const { data: profile, error: profileError } =
-            await supabaseClient
-                .from("profiles")
-                .select("username")
-                .eq("id", user.id)
-                .single();
+                if (userError || !user) {
+                    alert("You must be logged in to publish a post.");
+                    return;
+                }
 
-        if (profileError || !profile) {
-            alert("Could not load your profile.");
-            return;
-        }
+                const { data: profile, error: profileError } =
+                    await supabaseClient
+                        .from("profiles")
+                        .select("username")
+                        .eq("id", user.id)
+                        .single();
 
-        const { data: post, error: postError } =
-            await supabaseClient
-                .from("posts")
-                .insert({
-                    user_id: user.id,
-                    username: profile.username,
-                    content: content
-                })
-                .select()
-                .single();
+                if (profileError || !profile) {
+                    alert("Could not load your profile.");
+                    return;
+                }
 
-        if (postError) {
-            alert(postError.message);
-            return;
-        }
+                // 1. Guardar Post
+                const { data: post, error: postError } =
+                    await supabaseClient
+                        .from("posts")
+                        .insert({
+                            user_id: user.id,
+                            username: profile.username,
+                            content: content
+                        })
+                        .select()
+                        .single();
 
-        for (const file of window.filesList) {
+                if (postError) throw postError;
 
-    const safeFileName = file.name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]/g, "_");
+                // 2. Subir Archivos
+                if (window.filesList && window.filesList.length > 0) {
+                    for (const file of window.filesList) {
+                        const safeFileName = file.name
+                            .normalize("NFD")
+                            .replace(/[\u0300-\u036f]/g, "")
+                            .replace(/[^a-zA-Z0-9._-]/g, "_");
 
-const filePath =
-    user.id + "/" + crypto.randomUUID() + "-" + safeFileName;
+                        const filePath = user.id + "/" + crypto.randomUUID() + "-" + safeFileName;
 
-    const { error: uploadError } =
-        await supabaseClient.storage
-            .from("post-media")
-            .upload(filePath, file);
+                        const { error: uploadError } =
+                            await supabaseClient.storage
+                                .from("post-media")
+                                .upload(filePath, file);
 
-    if (uploadError) {
-alert("Could not upload " + file.name + ": " + uploadError.message);        return;
+                        if (uploadError) throw uploadError;
+
+                        const { error: mediaError } =
+                            await supabaseClient
+                                .from("post_media")
+                                .insert({
+                                    post_id: post.id,
+                                    file_path: filePath,
+                                    file_type: file.type,
+                                    original_name: file.name
+                                });
+
+                        if (mediaError) throw mediaError;
+                    }
+                }
+
+                // 3. Subir Enlaces
+                if (window.linksList && window.linksList.length > 0) {
+                    for (const url of window.linksList) {
+                        const { error: linkError } =
+                            await supabaseClient
+                                .from("post_links")
+                                .insert({
+                                    post_id: post.id,
+                                    url: url
+                                });
+
+                        if (linkError) throw linkError;
+                    }
+                }
+
+                alert("Post published! 💗");
+
+                // Limpiar campos
+                postContent.value = "";
+                window.filesList = [];
+                window.linksList = [];
+                
+                const selectedFilesElem = document.getElementById("selected-files");
+                const selectedLinksElem = document.getElementById("selected-links");
+                if (selectedFilesElem) selectedFilesElem.innerHTML = "";
+                if (selectedLinksElem) selectedLinksElem.innerHTML = "";
+
+                // Recargar página limpia
+                location.reload();
+
+            } catch (err) {
+                alert("Error publishing post: " + err.message);
+            } finally {
+                publishButton.disabled = false;
+                publishButton.textContent = "Publish";
+            }
+        });
     }
-
-    const { error: mediaError } =
-        await supabaseClient
-            .from("post_media")
-            .insert({
-                post_id: post.id,
-                file_path: filePath,
-                file_type: file.type,
-                original_name: file.name
-            });
-
-    if (mediaError) {
-        alert("Could not save information for " + file.name + ".");
-        return;
-    }
-}
-        for (const url of window.linksList) {
-
-    const { error: linkError } =
-        await supabaseClient
-            .from("post_links")
-            .insert({
-                post_id: post.id,
-                url: url
-            });
-
-    if (linkError) {
-        alert("Could not save link: " + linkError.message);
-        return;
-    }
-}
-       
-        alert("Post published! 💗");
-        postContent.value = "";
-        window.filesList = [];
-window.linksList = [];
-document.getElementById("selected-files").innerHTML = "";
-document.getElementById("selected-links").innerHTML = "";
-
-    });
 
 });
 
