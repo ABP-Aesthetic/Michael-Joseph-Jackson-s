@@ -1074,7 +1074,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             const { data: newComment, error: cErr } = await supabaseClient.from("post_comments").insert({
                 post_id: post.id,
                 user_id: user.id,
-                username: user.email.split('@')[0],
+                username: user.user_metadata?.username || user.email.split('@')[0],
                 content: text
             }).select().single();
 
@@ -1421,7 +1421,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 post_id: comment.post_id,
                 parent_comment_id: comment.id,
                 user_id: user.id,
-                username: user.email.split('@')[0],
+                username: user.user_metadata?.username || user.email.split('@')[0],
                 content: val
             }).select().single();
 
