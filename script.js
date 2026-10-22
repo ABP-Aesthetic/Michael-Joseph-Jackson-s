@@ -655,7 +655,6 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("DOMContentLoaded", async function () {
     const postsContainer = document.getElementById("posts-container");
 
-    // Crear la estructura de la ventana gigante (Modal) si no existe
     let postModal = document.getElementById("post-modal");
     if (!postModal) {
         postModal = document.createElement("div");
@@ -687,7 +686,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         const { data: media } = await supabaseClient.from("post_media").select("*").eq("post_id", post.id);
         const { data: links } = await supabaseClient.from("post_links").select("*").eq("post_id", post.id);
 
-        // MINIATURA DE LA TARJETA PEQUEÑA
         if (media && media.length > 0) {
             const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(media[0].file_path);
             
@@ -718,7 +716,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         postCard.appendChild(username);
         postCard.appendChild(content);
 
-        // AL HACER CLIC: ABRIR POST COMPLETO
         postCard.addEventListener("click", () => {
             const modalBody = document.getElementById("modal-post-body");
             modalBody.innerHTML = `
@@ -729,7 +726,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 <div id="modal-actions" style="margin-top:25px; padding-top:20px; border-top:1px solid #ddd;"></div>
             `;
 
-            // Mostrar fotos existentes
             if (media) {
                 const mediaContainer = modalBody.querySelector("#modal-media-container");
                 media.forEach(m => {
@@ -745,7 +741,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 });
             }
 
-            // Mostrar enlaces existentes
             if (links) {
                 const linksContainer = modalBody.querySelector("#modal-links-container");
                 links.forEach(l => {
@@ -760,7 +755,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 });
             }
 
-            // Si eres el creador del post, verás los botones de edición
             if (user && user.id === post.user_id) {
                 const actionsContainer = modalBody.querySelector("#modal-actions");
                 
@@ -780,7 +774,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     let editFilesList = [];
                     let editLinksList = [];
 
-                    // 1. Cambiar texto a caja de edición
+                    // 1. TEXTO
                     const textArea = document.createElement("textarea");
                     textArea.value = post.content;
                     textArea.style.width = "100%";
@@ -788,7 +782,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     textArea.style.marginBottom = "15px";
                     currentTextP.replaceWith(textArea);
 
-                    // 2. Marcar imágenes viejas para eliminar
+                    // 2. ELIMINAR FOTOS EXISTENTES
                     if (media && media.length > 0) {
                         media.forEach(m => {
                             const wrapper = mediaContainer.querySelector(`[data-media-id="${m.id}"]`);
@@ -810,7 +804,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                         });
                     }
 
-                    // 3. Marcar links viejos para eliminar
+                    // 3. ELIMINAR LINKS EXISTENTES
                     if (links && links.length > 0) {
                         linksContainer.querySelectorAll("a").forEach((aTag, idx) => {
                             const l = links[idx];
@@ -829,15 +823,15 @@ document.addEventListener("DOMContentLoaded", async function () {
                         });
                     }
 
-                    // 4. Caja para ARRASTRAR NUEVAS FOTOS (Igual que en el creador)
+                    // 4. ARRASTRAR ARCHIVOS NUEVOS (IDÉNTICO AL CREADOR)
                     const dropZoneEdit = document.createElement("div");
                     dropZoneEdit.style.cssText = "border: 2px dashed #ccc; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 15px; background: #fafafa;";
-                    dropZoneEdit.innerHTML = "<p style='margin:0;'>📁 Drag new photos here or click to select</p>";
+                    dropZoneEdit.innerHTML = "<p style='margin:0;'>💾 Upload files or Drag & drop files here</p>";
 
                     const fileInputEdit = document.createElement("input");
                     fileInputEdit.type = "file";
                     fileInputEdit.multiple = true;
-                    fileInputEdit.accept = "image/*";
+                    fileInputEdit.accept = "image/*,video/*,audio/*";
                     fileInputEdit.style.display = "none";
 
                     const editFilesPreview = document.createElement("div");
@@ -847,9 +841,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                         editFilesPreview.innerHTML = "";
                         editFilesList.forEach((file, index) => {
                             const row = document.createElement("div");
-                            row.textContent = "📷 " + file.name + " ";
+                            row.style.margin = "5px 0";
+                            row.textContent = "📁 " + file.name + " ";
                             const removeBtn = document.createElement("button");
                             removeBtn.textContent = "✕";
+                            removeBtn.style.cssText = "background:none; border:none; color:red; cursor:pointer; font-weight:bold;";
                             removeBtn.onclick = () => { editFilesList.splice(index, 1); renderEditFiles(); };
                             row.appendChild(removeBtn);
                             editFilesPreview.appendChild(row);
@@ -871,44 +867,16 @@ document.addEventListener("DOMContentLoaded", async function () {
                         renderEditFiles();
                     };
 
-                    // 5. Añadir NUEVOS LINKS (Ilimitados)
+                    // 5. AÑADIR LINKS NUEVOS (IDÉNTICO AL CREADOR)
                     const linkSection = document.createElement("div");
                     linkSection.style.marginTop = "15px";
                     linkSection.innerHTML = `
                         <div style="display:flex; gap:10px;">
-                            <input type="url" id="edit-link-input" placeholder="https://..." style="flex:1; padding:8px;">
-                            <button type="button" id="edit-add-link-btn">Add Link</button>
+                            <input type="url" id="edit-link-input" placeholder="Paste a link..." style="flex:1; padding:8px;">
+                            <button type="button" id="edit-add-link-btn">🔗 Add link</button>
                         </div>
                         <div id="edit-links-preview" style="margin-top:10px;"></div>
                     `;
-
-                    setTimeout(() => {
-                        const linkInput = linkSection.querySelector("#edit-link-input");
-                        const addLinkBtn = linkSection.querySelector("#edit-add-link-btn");
-                        const linksPreview = linkSection.querySelector("#edit-links-preview");
-
-                        const renderEditLinks = () => {
-                            linksPreview.innerHTML = "";
-                            editLinksList.forEach((url, index) => {
-                                const row = document.createElement("div");
-                                row.textContent = "🔗 " + url + " ";
-                                const removeBtn = document.createElement("button");
-                                removeBtn.textContent = "✕";
-                                removeBtn.onclick = () => { editLinksList.splice(index, 1); renderEditLinks(); };
-                                row.appendChild(removeBtn);
-                                linksPreview.appendChild(row);
-                            });
-                        };
-
-                        addLinkBtn.onclick = () => {
-                            const val = linkInput.value.trim();
-                            if (val) {
-                                editLinksList.push(val);
-                                linkInput.value = "";
-                                renderEditLinks();
-                            }
-                        };
-                    }, 50);
 
                     actionsContainer.appendChild(document.createElement("hr"));
                     actionsContainer.appendChild(dropZoneEdit);
@@ -916,7 +884,35 @@ document.addEventListener("DOMContentLoaded", async function () {
                     actionsContainer.appendChild(editFilesPreview);
                     actionsContainer.appendChild(linkSection);
 
-                    // 6. Botón Guardar Cambios
+                    const linkInput = linkSection.querySelector("#edit-link-input");
+                    const addLinkBtn = linkSection.querySelector("#edit-add-link-btn");
+                    const linksPreview = linkSection.querySelector("#edit-links-preview");
+
+                    const renderEditLinks = () => {
+                        linksPreview.innerHTML = "";
+                        editLinksList.forEach((url, index) => {
+                            const row = document.createElement("div");
+                            row.style.margin = "5px 0";
+                            row.textContent = "🔗 " + url + " ";
+                            const removeBtn = document.createElement("button");
+                            removeBtn.textContent = "✕";
+                            removeBtn.style.cssText = "background:none; border:none; color:red; cursor:pointer; font-weight:bold;";
+                            removeBtn.onclick = () => { editLinksList.splice(index, 1); renderEditLinks(); };
+                            row.appendChild(removeBtn);
+                            linksPreview.appendChild(row);
+                        });
+                    };
+
+                    addLinkBtn.onclick = () => {
+                        const val = linkInput.value.trim();
+                        if (val) {
+                            editLinksList.push(val);
+                            linkInput.value = "";
+                            renderEditLinks();
+                        }
+                    };
+
+                    // 6. BOTÓN GUARDAR CAMBIOS
                     const saveAllBtn = document.createElement("button");
                     saveAllBtn.textContent = "✅ Save Changes";
                     saveAllBtn.style.cssText = "margin-top: 20px; padding: 10px 20px; background-color: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;";
@@ -929,7 +925,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                         saveAllBtn.textContent = "Saving...";
 
                         try {
-                            // Guardar texto
+                            // Actualizar texto
                             await supabaseClient.from("posts").update({ content: newText }).eq("id", post.id);
 
                             // Borrar imágenes marcadas
@@ -943,12 +939,14 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 await supabaseClient.from("post_links").delete().eq("id", linkId);
                             }
 
-                            // Subir fotos nuevas
+                            // Subir fotos o archivos nuevos
                             for (const file of editFilesList) {
                                 const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]/g, "_");
                                 const filePath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
 
-                                await supabaseClient.storage.from("post-media").upload(filePath, file);
+                                const { error: uploadError } = await supabaseClient.storage.from("post-media").upload(filePath, file);
+                                if (uploadError) throw new Error("Storage error: " + uploadError.message);
+
                                 await supabaseClient.from("post_media").insert({
                                     post_id: post.id,
                                     file_path: filePath,
@@ -957,7 +955,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 });
                             }
 
-                            // Subir enlaces nuevos
+                            // Insertar enlaces nuevos
                             for (const url of editLinksList) {
                                 await supabaseClient.from("post_links").insert({
                                     post_id: post.id,
