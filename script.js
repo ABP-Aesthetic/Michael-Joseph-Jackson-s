@@ -651,7 +651,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // --- INICIO CARGA DE POSTS CON IMÁGENES Y LINKS ---
-// --- INICIO CARGA DE POSTS (CUADRÍCULA Y MODAL) ---
+// --- INICIO CARGA DE POSTS (CON LIKES, DISLIKES Y COMENTARIOS) ---
 document.addEventListener("DOMContentLoaded", async function () {
     const postsContainer = document.getElementById("posts-container");
 
@@ -682,24 +682,19 @@ document.addEventListener("DOMContentLoaded", async function () {
     for (const post of posts) {
         const postCard = document.createElement("article");
         postCard.className = "post-card";
+        postCard.style.position = "relative";
 
         const { data: media } = await supabaseClient.from("post_media").select("*").eq("post_id", post.id);
         const { data: links } = await supabaseClient.from("post_links").select("*").eq("post_id", post.id);
 
-        // Formatear la fecha
         const postDate = new Date(post.created_at).toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
-        // MINIATURA DE LA TARJETA PEQUEÑA
+        // MINIATURA
         if (media && media.length > 0) {
             const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(media[0].file_path);
             const firstFile = media[0];
-            
             const previewContainer = document.createElement("div");
             previewContainer.className = "media-preview";
             
@@ -744,302 +739,418 @@ document.addEventListener("DOMContentLoaded", async function () {
         postCard.appendChild(dateSpan);
         postCard.appendChild(content);
 
-        // ABRIR MODAL COMPLETO
-        postCard.addEventListener("click", () => {
-            const modalBody = document.getElementById("modal-post-body");
-            modalBody.innerHTML = `
-                <h2 style="margin-top:0; color:#ff6b6b; margin-bottom:5px;">${post.username}</h2>
-                <small style="color:#888; display:block; margin-bottom:15px;">📅 ${postDate}</small>
-                <p id="modal-text-${post.id}" style="font-size:1.1em; line-height:1.6;">${post.content}</p>
-                <div id="modal-media-container" style="display:flex; flex-direction:column; gap:15px; margin-top:20px;"></div>
-                <div id="modal-links-container" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;"></div>
-                <div id="modal-actions" style="margin-top:25px; padding-top:20px; border-top:1px solid #ddd;"></div>
-            `;
+        // BOTÓN 3 PUNTITOS (MENÚ DE OPCIONES RÁPIDAS)
+        const menuBtn = document.createElement("button");
+        menuBtn.textContent = "⋮";
+        menuBtn.style.cssText = "position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); border:none; font-size:1.4em; cursor:pointer; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; z-index:5;";
+        
+        const dropMenu = document.createElement("div");
+        dropMenu.style.cssText = "display:none; position:absolute; top:45px; right:10px; background:white; border:1px solid #ccc; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.1); z-index:10; padding:5px 0;";
+        dropMenu.innerHTML = `
+            <button class="menu-opt-like" style="display:block; width:100%; text-align:left; background:none; border:none; padding:8px 15px; cursor:pointer;">👍 Like</button>
+            <button class="menu-opt-dislike" style="display:block; width:100%; text-align:left; background:none; border:none; padding:8px 15px; cursor:pointer;">👎 Dislike</button>
+            <button class="menu-opt-comment" style="display:block; width:100%; text-align:left; background:none; border:none; padding:8px 15px; cursor:pointer;">💬 Comment</button>
+        `;
 
-            // VISUALIZACIÓN MULTIMEDIA EN EL MODAL
-            if (media) {
-                const mediaContainer = modalBody.querySelector("#modal-media-container");
-                media.forEach(m => {
-                    const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(m.file_path);
-                    const wrapper = document.createElement("div");
-                    wrapper.setAttribute("data-media-id", m.id);
-                    const fileType = m.file_type || "";
+        menuBtn.onclick = (e) => {
+            e.stopPropagation();
+            dropMenu.style.display = dropMenu.style.display === "none" ? "block" : "none";
+        };
 
-                    if (fileType.startsWith("image/")) {
-                        const fullImg = document.createElement("img");
-                        fullImg.src = uData.publicUrl;
-                        fullImg.style.width = "100%";
-                        fullImg.style.borderRadius = "10px";
-                        wrapper.appendChild(fullImg);
-                    } else if (fileType.startsWith("video/")) {
-                        const video = document.createElement("video");
-                        video.src = uData.publicUrl;
-                        video.controls = true;
-                        video.style.width = "100%";
-                        video.style.borderRadius = "10px";
-                        wrapper.appendChild(video);
-                    } else if (fileType.startsWith("audio/")) {
-                        const audio = document.createElement("audio");
-                        audio.src = uData.publicUrl;
-                        audio.controls = true;
-                        audio.style.width = "100%";
-                        wrapper.appendChild(audio);
-                    } else {
-                        const fileLink = document.createElement("a");
-                        fileLink.href = uData.publicUrl;
-                        fileLink.target = "_blank";
-                        fileLink.textContent = "📄 " + (m.original_name || "View/Download file");
-                        fileLink.style.cssText = "display:inline-block; padding:10px; background:#eef; border-radius:5px; color:#0066cc; text-decoration:none;";
-                        wrapper.appendChild(fileLink);
-                    }
+        document.addEventListener("click", () => dropMenu.style.display = "none");
 
-                    mediaContainer.appendChild(wrapper);
-                });
-            }
+        dropMenu.querySelector(".menu-opt-like").onclick = (e) => { e.stopPropagation(); togglePostReaction(post.id, 'like'); };
+        dropMenu.querySelector(".menu-opt-dislike").onclick = (e) => { e.stopPropagation(); togglePostReaction(post.id, 'dislike'); };
+        dropMenu.querySelector(".menu-opt-comment").onclick = (e) => { e.stopPropagation(); openPostModal(post, media, links, postDate, true); };
 
-            // ENLACES EXTERNOS
-            if (links) {
-                const linksContainer = modalBody.querySelector("#modal-links-container");
-                links.forEach(l => {
-                    const a = document.createElement("a");
-                    a.href = l.url;
-                    a.textContent = "🔗 " + l.url;
-                    a.target = "_blank";
-                    a.style.color = "#0066cc";
-                    a.style.fontWeight = "bold";
-                    a.style.wordBreak = "break-all";
-                    linksContainer.appendChild(a);
-                });
-            }
+        postCard.appendChild(menuBtn);
+        postCard.appendChild(dropMenu);
 
-            // BOTONES DE EDICIÓN
-            if (user && user.id === post.user_id) {
-                const actionsContainer = modalBody.querySelector("#modal-actions");
-                
-                const editBtn = document.createElement("button");
-                editBtn.textContent = "✏️ Edit Post";
-                editBtn.style.marginRight = "10px";
-
-                editBtn.onclick = () => {
-                    actionsContainer.innerHTML = "";
-
-                    const currentTextP = modalBody.querySelector(`#modal-text-${post.id}`);
-                    const mediaContainer = modalBody.querySelector("#modal-media-container");
-                    const linksContainer = modalBody.querySelector("#modal-links-container");
-
-                    let mediaToDelete = [];
-                    let linksToDelete = [];
-                    let editFilesList = [];
-                    let editLinksList = [];
-
-                    const textArea = document.createElement("textarea");
-                    textArea.value = post.content;
-                    textArea.style.width = "100%";
-                    textArea.style.height = "100px";
-                    textArea.style.marginBottom = "15px";
-                    currentTextP.replaceWith(textArea);
-
-                    if (media && media.length > 0) {
-                        media.forEach(m => {
-                            const wrapper = mediaContainer.querySelector(`[data-media-id="${m.id}"]`);
-                            if (wrapper && !wrapper.querySelector(".edit-del-btn")) {
-                                wrapper.style.position = "relative";
-                                const delBtn = document.createElement("button");
-                                delBtn.className = "edit-del-btn";
-                                delBtn.textContent = "✕ Remove";
-                                delBtn.style.cssText = "position:absolute; top:10px; right:10px; background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; z-index:10;";
-                                
-                                delBtn.onclick = () => {
-                                    mediaToDelete.push(m);
-                                    wrapper.style.opacity = "0.3";
-                                    delBtn.disabled = true;
-                                    delBtn.textContent = "Marked for deletion";
-                                };
-                                wrapper.appendChild(delBtn);
-                            }
-                        });
-                    }
-
-                    if (links && links.length > 0) {
-                        linksContainer.querySelectorAll("a").forEach((aTag, idx) => {
-                            const l = links[idx];
-                            if (!l) return;
-                            const delLinkBtn = document.createElement("button");
-                            delLinkBtn.textContent = "✕";
-                            delLinkBtn.style.cssText = "margin-left:10px; background:#ff4d4d; color:white; border:none; border-radius:3px; cursor:pointer;";
-                            
-                            delLinkBtn.onclick = () => {
-                                linksToDelete.push(l.id);
-                                aTag.style.textDecoration = "line-through";
-                                aTag.style.color = "gray";
-                                delLinkBtn.disabled = true;
-                            };
-                            aTag.after(delLinkBtn);
-                        });
-                    }
-
-                    const dropZoneEdit = document.createElement("div");
-                    dropZoneEdit.style.cssText = "border: 2px dashed #ccc; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 15px; background: #fafafa;";
-                    dropZoneEdit.innerHTML = "<p style='margin:0;'>💾 Upload files or Drag & drop files here</p>";
-
-                    const fileInputEdit = document.createElement("input");
-                    fileInputEdit.type = "file";
-                    fileInputEdit.multiple = true;
-                    fileInputEdit.accept = "*/*";
-                    fileInputEdit.style.display = "none";
-
-                    const editFilesPreview = document.createElement("div");
-                    editFilesPreview.style.marginTop = "10px";
-
-                    const renderEditFiles = () => {
-                        editFilesPreview.innerHTML = "";
-                        editFilesList.forEach((file, index) => {
-                            const row = document.createElement("div");
-                            row.style.margin = "5px 0";
-                            row.textContent = "📁 " + file.name + " ";
-                            const removeBtn = document.createElement("button");
-                            removeBtn.textContent = "✕";
-                            removeBtn.style.cssText = "background:none; border:none; color:red; cursor:pointer; font-weight:bold;";
-                            removeBtn.onclick = () => { editFilesList.splice(index, 1); renderEditFiles(); };
-                            row.appendChild(removeBtn);
-                            editFilesPreview.appendChild(row);
-                        });
-                    };
-
-                    dropZoneEdit.onclick = () => fileInputEdit.click();
-                    fileInputEdit.onchange = (e) => {
-                        editFilesList.push(...Array.from(e.target.files));
-                        renderEditFiles();
-                    };
-
-                    dropZoneEdit.ondragover = (e) => { e.preventDefault(); dropZoneEdit.style.background = "#eee"; };
-                    dropZoneEdit.ondragleave = () => { dropZoneEdit.style.background = "#fafafa"; };
-                    dropZoneEdit.ondrop = (e) => {
-                        e.preventDefault();
-                        dropZoneEdit.style.background = "#fafafa";
-                        editFilesList.push(...Array.from(e.dataTransfer.files));
-                        renderEditFiles();
-                    };
-
-                    const linkSection = document.createElement("div");
-                    linkSection.style.marginTop = "15px";
-                    linkSection.innerHTML = `
-                        <div style="display:flex; gap:10px;">
-                            <input type="url" id="edit-link-input" placeholder="Paste a link..." style="flex:1; padding:8px;">
-                            <button type="button" id="edit-add-link-btn">🔗 Add link</button>
-                        </div>
-                        <div id="edit-links-preview" style="margin-top:10px;"></div>
-                    `;
-
-                    actionsContainer.appendChild(document.createElement("hr"));
-                    actionsContainer.appendChild(dropZoneEdit);
-                    actionsContainer.appendChild(fileInputEdit);
-                    actionsContainer.appendChild(editFilesPreview);
-                    actionsContainer.appendChild(linkSection);
-
-                    const linkInput = linkSection.querySelector("#edit-link-input");
-                    const addLinkBtn = linkSection.querySelector("#edit-add-link-btn");
-                    const linksPreview = linkSection.querySelector("#edit-links-preview");
-
-                    const renderEditLinks = () => {
-                        linksPreview.innerHTML = "";
-                        editLinksList.forEach((url, index) => {
-                            const row = document.createElement("div");
-                            row.style.margin = "5px 0";
-                            row.textContent = "🔗 " + url + " ";
-                            const removeBtn = document.createElement("button");
-                            removeBtn.textContent = "✕";
-                            removeBtn.style.cssText = "background:none; border:none; color:red; cursor:pointer; font-weight:bold;";
-                            removeBtn.onclick = () => { editLinksList.splice(index, 1); renderEditLinks(); };
-                            row.appendChild(removeBtn);
-                            linksPreview.appendChild(row);
-                        });
-                    };
-
-                    addLinkBtn.onclick = () => {
-                        const val = linkInput.value.trim();
-                        if (val) {
-                            editLinksList.push(val);
-                            linkInput.value = "";
-                            renderEditLinks();
-                        }
-                    };
-
-                    const saveAllBtn = document.createElement("button");
-                    saveAllBtn.textContent = "✅ Save Changes";
-                    saveAllBtn.style.cssText = "margin-top: 20px; padding: 10px 20px; background-color: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;";
-
-                    saveAllBtn.onclick = async () => {
-                        const newText = textArea.value.trim();
-                        if (!newText) return alert("Post text cannot be empty.");
-
-                        saveAllBtn.disabled = true;
-                        saveAllBtn.textContent = "Saving...";
-
-                        try {
-                            await supabaseClient.from("posts").update({ content: newText }).eq("id", post.id);
-
-                            for (const m of mediaToDelete) {
-                                await supabaseClient.from("post_media").delete().eq("id", m.id);
-                                await supabaseClient.storage.from("post-media").remove([m.file_path]);
-                            }
-
-                            for (const linkId of linksToDelete) {
-                                await supabaseClient.from("post_links").delete().eq("id", linkId);
-                            }
-
-                            for (const file of editFilesList) {
-                                const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]/g, "_");
-                                const filePath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
-
-                                const { error: uploadError } = await supabaseClient.storage.from("post-media").upload(filePath, file);
-                                if (uploadError) throw new Error("Storage error: " + uploadError.message);
-
-                                await supabaseClient.from("post_media").insert({
-                                    post_id: post.id,
-                                    file_path: filePath,
-                                    file_type: file.type,
-                                    original_name: file.name
-                                });
-                            }
-
-                            for (const url of editLinksList) {
-                                await supabaseClient.from("post_links").insert({
-                                    post_id: post.id,
-                                    url: url
-                                });
-                            }
-
-                            alert("Post updated successfully! ✨");
-                            location.reload();
-
-                        } catch (err) {
-                            alert("Error updating post: " + err.message);
-                            saveAllBtn.disabled = false;
-                            saveAllBtn.textContent = "✅ Save Changes";
-                        }
-                    };
-
-                    actionsContainer.appendChild(saveAllBtn);
-                };
-
-                const delBtn = document.createElement("button");
-                delBtn.textContent = "🗑️ Delete Post";
-                delBtn.onclick = async () => {
-                    if(!confirm("Are you sure you want to delete this post?")) return;
-                    await supabaseClient.from("posts").update({ deleted: true }).eq("id", post.id);
-                    postCard.remove();
-                    postModal.style.display = "none";
-                };
-                
-                actionsContainer.appendChild(editBtn);
-                actionsContainer.appendChild(delBtn);
-            }
-            
-            postModal.style.display = "flex";
-        });
-
+        postCard.addEventListener("click", () => openPostModal(post, media, links, postDate, false));
         postsContainer.appendChild(postCard);
+    }
+
+    // FUNCIÓN PARA GESTIONAR LIKES/DISLIKES DE POSTS
+    async function togglePostReaction(postId, type) {
+        if (!user) return alert("Please log in to react.");
+        const { data: existing } = await supabaseClient.from("post_reactions").select("*").eq("post_id", postId).eq("user_id", user.id).single();
+        if (existing) {
+            if (existing.type === type) {
+                await supabaseClient.from("post_reactions").delete().eq("id", existing.id);
+            } else {
+                await supabaseClient.from("post_reactions").update({ type }).eq("id", existing.id);
+            }
+        } else {
+            await supabaseClient.from("post_reactions").insert({ post_id: postId, user_id: user.id, type });
+        }
+        location.reload();
+    }
+
+    // ABRIR EL MODAL DEL POST
+    async function openPostModal(post, media, links, postDate, focusComment = false) {
+        const modalBody = document.getElementById("modal-post-body");
+        modalBody.innerHTML = `
+            <h2 style="margin-top:0; color:#ff6b6b; margin-bottom:5px;">${post.username}</h2>
+            <small style="color:#888; display:block; margin-bottom:15px;">📅 ${postDate}</small>
+            <p id="modal-text-${post.id}" style="font-size:1.1em; line-height:1.6;">${post.content}</p>
+            <div id="modal-media-container" style="display:flex; flex-direction:column; gap:15px; margin-top:20px;"></div>
+            <div id="modal-links-container" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;"></div>
+            
+            <!-- REACCIONES DEL POST -->
+            <div id="post-reactions-bar" style="display:flex; gap:20px; align-items:center; margin-top:20px; padding:10px 0; border-top:1px solid #eee; border-bottom:1px solid #eee;">
+                <button id="post-like-btn" style="background:none; border:none; cursor:pointer; font-size:1.2em;">👍 <span id="post-like-count">0</span></button>
+                <button id="post-dislike-btn" style="background:none; border:none; cursor:pointer; font-size:1.2em;">👎 <span id="post-dislike-count">0</span></button>
+            </div>
+
+            <!-- SECCIÓN DE COMENTARIOS -->
+            <div id="comments-section" style="margin-top:25px;">
+                <h3>Comments</h3>
+                <div id="comments-list" style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;"></div>
+                
+                <!-- CREADOR DE COMENTARIOS -->
+                <div id="add-comment-box" style="background:#f9f9f9; padding:15px; border-radius:8px;">
+                    <textarea id="comment-text" placeholder="Write a comment..." style="width:100%; height:60px; padding:8px; box-sizing:border-box;"></textarea>
+                    
+                    <div style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+                        <input type="file" id="comment-files" multiple accept="*/*" style="display:none;">
+                        <button type="button" id="comment-file-btn">📁 Add Media</button>
+                        <input type="url" id="comment-link-input" placeholder="Paste link..." style="flex:1; padding:5px;">
+                        <button type="button" id="comment-add-link-btn">🔗 Link</button>
+                    </div>
+                    <div id="comment-files-preview" style="font-size:0.85em; margin-top:5px;"></div>
+                    <div id="comment-links-preview" style="font-size:0.85em; margin-top:5px;"></div>
+                    
+                    <button id="submit-comment-btn" style="margin-top:10px; padding:8px 15px; background:#ff6b6b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Comment</button>
+                </div>
+            </div>
+
+            <div id="modal-actions" style="margin-top:25px; padding-top:20px; border-top:1px solid #ddd;"></div>
+        `;
+
+        // CARGAR CONTADORES DE REACCIONES DEL POST
+        const { data: reactions } = await supabaseClient.from("post_reactions").select("*").eq("post_id", post.id);
+        const likes = reactions ? reactions.filter(r => r.type === 'like') : [];
+        const dislikes = reactions ? reactions.filter(r => r.type === 'dislike') : [];
+
+        const likeBtn = modalBody.querySelector("#post-like-btn");
+        const dislikeBtn = modalBody.querySelector("#post-dislike-btn");
+        
+        modalBody.querySelector("#post-like-count").textContent = likes.length;
+        modalBody.querySelector("#post-dislike-count").textContent = dislikes.length;
+
+        if (user) {
+            const userReaction = reactions ? reactions.find(r => r.user_id === user.id) : null;
+            if (userReaction?.type === 'like') likeBtn.innerHTML = `❤️ <span id="post-like-count">${likes.length}</span>`;
+            if (userReaction?.type === 'dislike') dislikeBtn.innerHTML = `🖤 <span id="post-dislike-count">${dislikes.length}</span>`;
+        }
+
+        likeBtn.onclick = async () => { await togglePostReaction(post.id, 'like'); openPostModal(post, media, links, postDate); };
+        dislikeBtn.onclick = async () => { await togglePostReaction(post.id, 'dislike'); openPostModal(post, media, links, postDate); };
+
+        // MOSTRAR ARCHIVOS Y LINKS DEL POST
+        if (media) {
+            const mediaContainer = modalBody.querySelector("#modal-media-container");
+            media.forEach(m => {
+                const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(m.file_path);
+                const wrapper = document.createElement("div");
+                wrapper.setAttribute("data-media-id", m.id);
+                const fileType = m.file_type || "";
+
+                if (fileType.startsWith("image/")) {
+                    const fullImg = document.createElement("img");
+                    fullImg.src = uData.publicUrl;
+                    fullImg.style.width = "100%";
+                    fullImg.style.borderRadius = "10px";
+                    wrapper.appendChild(fullImg);
+                } else if (fileType.startsWith("video/")) {
+                    const video = document.createElement("video");
+                    video.src = uData.publicUrl;
+                    video.controls = true;
+                    video.style.width = "100%";
+                    wrapper.appendChild(video);
+                } else if (fileType.startsWith("audio/")) {
+                    const audio = document.createElement("audio");
+                    audio.src = uData.publicUrl;
+                    audio.controls = true;
+                    audio.style.width = "100%";
+                    wrapper.appendChild(audio);
+                } else {
+                    const fileLink = document.createElement("a");
+                    fileLink.href = uData.publicUrl;
+                    fileLink.target = "_blank";
+                    fileLink.textContent = "📄 " + (m.original_name || "View file");
+                    wrapper.appendChild(fileLink);
+                }
+                mediaContainer.appendChild(wrapper);
+            });
+        }
+
+        if (links) {
+            const linksContainer = modalBody.querySelector("#modal-links-container");
+            links.forEach(l => {
+                const a = document.createElement("a");
+                a.href = l.url;
+                a.textContent = "🔗 " + l.url;
+                a.target = "_blank";
+                linksContainer.appendChild(a);
+            });
+        }
+
+        // EDICIÓN / BORRADO DEL PROPIETARIO
+        if (user && user.id === post.user_id) {
+            const actionsContainer = modalBody.querySelector("#modal-actions");
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "🗑️ Delete Post";
+            delBtn.onclick = async () => {
+                if(!confirm("Are you sure?")) return;
+                await supabaseClient.from("posts").update({ deleted: true }).eq("id", post.id);
+                location.reload();
+            };
+            actionsContainer.appendChild(delBtn);
+        }
+
+        // CARGAR COMENTARIOS DEL POST
+        loadComments(post.id);
+
+        // LÓGICA DE SUBIR ARCHIVOS EN EL COMENTARIO
+        let commentFiles = [];
+        let commentLinks = [];
+
+        const fileBtn = modalBody.querySelector("#comment-file-btn");
+        const fileInput = modalBody.querySelector("#comment-files");
+        const filesPreview = modalBody.querySelector("#comment-files-preview");
+        
+        fileBtn.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => {
+            commentFiles.push(...Array.from(e.target.files));
+            filesPreview.textContent = commentFiles.map(f => "📁 " + f.name).join(", ");
+        };
+
+        const linkInput = modalBody.querySelector("#comment-link-input");
+        const addLinkBtn = modalBody.querySelector("#comment-add-link-btn");
+        const linksPreview = modalBody.querySelector("#comment-links-preview");
+
+        addLinkBtn.onclick = () => {
+            const val = linkInput.value.trim();
+            if (val) {
+                commentLinks.push(val);
+                linkInput.value = "";
+                linksPreview.textContent = commentLinks.map(l => "🔗 " + l).join(", ");
+            }
+        };
+
+        // PUBLICAR COMENTARIO
+        modalBody.querySelector("#submit-comment-btn").onclick = async () => {
+            if (!user) return alert("Log in to comment.");
+            const text = modalBody.querySelector("#comment-text").value.trim();
+            if (!text) return alert("Write something.");
+
+            const { data: newComment, error: cErr } = await supabaseClient.from("post_comments").insert({
+                post_id: post.id,
+                user_id: user.id,
+                username: user.email.split('@')[0],
+                content: text
+            }).select().single();
+
+            if (cErr) return alert("Error: " + cErr.message);
+
+            // Subir archivos del comentario
+            for (const file of commentFiles) {
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+                const filePath = `comments/${user.id}/${crypto.randomUUID()}-${safeName}`;
+                await supabaseClient.storage.from("post-media").upload(filePath, file);
+                await supabaseClient.from("comment_media").insert({
+                    comment_id: newComment.id,
+                    file_path: filePath,
+                    file_type: file.type,
+                    original_name: file.name
+                });
+            }
+
+            // Subir links del comentario
+            for (const url of commentLinks) {
+                await supabaseClient.from("comment_links").insert({
+                    comment_id: newComment.id,
+                    url: url
+                });
+            }
+
+            loadComments(post.id);
+            modalBody.querySelector("#comment-text").value = "";
+            commentFiles = [];
+            commentLinks = [];
+            filesPreview.textContent = "";
+            linksPreview.textContent = "";
+        };
+
+        postModal.style.display = "flex";
+        if (focusComment) modalBody.querySelector("#comment-text").focus();
+    }
+
+    // CARGAR Y RENDERIZAR COMENTARIOS Y RESPUESTAS (ANIDADOS)
+    async function loadComments(postId) {
+        const list = document.getElementById("comments-list");
+        list.innerHTML = "Loading comments...";
+
+        const { data: comments } = await supabaseClient
+            .from("post_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true });
+
+        list.innerHTML = "";
+        if (!comments || comments.length === 0) {
+            list.innerHTML = "<p style='color:#888;'>No comments yet.</p>";
+            return;
+        }
+
+        // Separar comentarios principales y respuestas
+        const mainComments = comments.filter(c => !c.parent_comment_id);
+        
+        for (const c of mainComments) {
+            const commentEl = await renderCommentTree(c, comments);
+            list.appendChild(commentEl);
+        }
+    }
+
+    // DIBUJAR COMENTARIO + REACCIONES + MULTIMEDIA + RESPUESTAS
+    async function renderCommentTree(comment, allComments) {
+        const container = document.createElement("div");
+        container.style.cssText = "background:#fff; border:1px solid #eee; padding:12px; border-radius:8px;";
+
+        const head = document.createElement("div");
+        head.style.cssText = "display:flex; justify-content:space-between; font-size:0.9em;";
+        head.innerHTML = `<strong>${comment.username}</strong> <small style='color:#888;'>${new Date(comment.created_at).toLocaleDateString()}</small>`;
+        
+        const body = document.createElement("p");
+        body.style.cssText = "margin:8px 0;";
+        body.textContent = comment.content;
+
+        container.appendChild(head);
+        container.appendChild(body);
+
+        // Archivos adjuntos del comentario
+        const { data: cMedia } = await supabaseClient.from("comment_media").select("*").eq("comment_id", comment.id);
+        if (cMedia && cMedia.length > 0) {
+            const mBox = document.createElement("div");
+            mBox.style.cssText = "display:flex; flex-direction:column; gap:8px; margin:8px 0;";
+            cMedia.forEach(m => {
+                const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(m.file_path);
+                if (m.file_type?.startsWith("image/")) {
+                    const img = document.createElement("img");
+                    img.src = uData.publicUrl;
+                    img.style.maxWidth = "200px";
+                    img.style.borderRadius = "5px";
+                    mBox.appendChild(img);
+                } else if (m.file_type?.startsWith("video/")) {
+                    const vid = document.createElement("video");
+                    vid.src = uData.publicUrl;
+                    vid.controls = true;
+                    vid.style.maxWidth = "250px";
+                    mBox.appendChild(vid);
+                } else if (m.file_type?.startsWith("audio/")) {
+                    const aud = document.createElement("audio");
+                    aud.src = uData.publicUrl;
+                    aud.controls = true;
+                    mBox.appendChild(aud);
+                }
+            });
+            container.appendChild(mBox);
+        }
+
+        // Links del comentario
+        const { data: cLinks } = await supabaseClient.from("comment_links").select("*").eq("comment_id", comment.id);
+        if (cLinks && cLinks.length > 0) {
+            cLinks.forEach(l => {
+                const a = document.createElement("a");
+                a.href = l.url;
+                a.target = "_blank";
+                a.textContent = "🔗 " + l.url;
+                a.style.cssText = "display:block; font-size:0.85em; color:#0066cc;";
+                container.appendChild(a);
+            });
+        }
+
+        // REACCIONES EN COMENTARIO
+        const { data: cReactions } = await supabaseClient.from("comment_reactions").select("*").eq("comment_id", comment.id);
+        const cLikes = cReactions ? cReactions.filter(r => r.type === 'like').length : 0;
+        const cDislikes = cReactions ? cReactions.filter(r => r.type === 'dislike').length : 0;
+
+        const reactBar = document.createElement("div");
+        reactBar.style.cssText = "display:flex; gap:15px; font-size:0.85em; margin-top:8px; color:#555;";
+        
+        let userCReaction = user && cReactions ? cReactions.find(r => r.user_id === user.id)?.type : null;
+        
+        const likeBtn = document.createElement("span");
+        likeBtn.style.cursor = "pointer";
+        likeBtn.innerHTML = `${userCReaction === 'like' ? '❤️' : '🤍'} ${cLikes}`;
+        likeBtn.onclick = async () => {
+            if (!user) return alert("Log in to react.");
+            if (userCReaction === 'like') {
+                await supabaseClient.from("comment_reactions").delete().eq("comment_id", comment.id).eq("user_id", user.id);
+            } else {
+                await supabaseClient.from("comment_reactions").upsert({ comment_id: comment.id, user_id: user.id, type: 'like' });
+            }
+            loadComments(comment.post_id);
+        };
+
+        const dislikeBtn = document.createElement("span");
+        dislikeBtn.style.cursor = "pointer";
+        dislikeBtn.innerHTML = `${userCReaction === 'dislike' ? '🖤' : '🤍'} ${cDislikes}`;
+        dislikeBtn.onclick = async () => {
+            if (!user) return alert("Log in to react.");
+            if (userCReaction === 'dislike') {
+                await supabaseClient.from("comment_reactions").delete().eq("comment_id", comment.id).eq("user_id", user.id);
+            } else {
+                await supabaseClient.from("comment_reactions").upsert({ comment_id: comment.id, user_id: user.id, type: 'dislike' });
+            }
+            loadComments(comment.post_id);
+        };
+
+        const replyBtn = document.createElement("span");
+        replyBtn.textContent = "💬 Reply";
+        replyBtn.style.cursor = "pointer";
+
+        reactBar.appendChild(likeBtn);
+        reactBar.appendChild(dislikeBtn);
+        reactBar.appendChild(replyBtn);
+        container.appendChild(reactBar);
+
+        // CAJA DE RESPUESTA A ESTE COMENTARIO
+        const replyBox = document.createElement("div");
+        replyBox.style.cssText = "display:none; margin-top:10px; padding-left:15px;";
+        replyBox.innerHTML = `
+            <input type="text" class="reply-input" placeholder="Write a reply..." style="width:70%; padding:5px;">
+            <button class="send-reply-btn" style="padding:5px 10px;">Reply</button>
+        `;
+        container.appendChild(replyBox);
+
+        replyBtn.onclick = () => replyBox.style.display = replyBox.style.display === "none" ? "block" : "none";
+
+        replyBox.querySelector(".send-reply-btn").onclick = async () => {
+            if (!user) return alert("Log in.");
+            const val = replyBox.querySelector(".reply-input").value.trim();
+            if (!val) return;
+            await supabaseClient.from("post_comments").insert({
+                post_id: comment.post_id,
+                parent_comment_id: comment.id,
+                user_id: user.id,
+                username: user.email.split('@')[0],
+                content: val
+            });
+            loadComments(comment.post_id);
+        };
+
+        // Renderizar respuestas hijas (comentarios de este comentario)
+        const replies = allComments.filter(c => c.parent_comment_id === comment.id);
+        if (replies.length > 0) {
+            const repliesContainer = document.createElement("div");
+            repliesContainer.style.cssText = "margin-left:20px; border-left:2px solid #ddd; padding-left:10px; margin-top:10px; display:flex; flex-direction:column; gap:10px;";
+            for (const r of replies) {
+                const childEl = await renderCommentTree(r, allComments);
+                repliesContainer.appendChild(childEl);
+            }
+            container.appendChild(repliesContainer);
+        }
+
+        return container;
     }
 });
 // --- FIN CARGA DE POSTS ---
