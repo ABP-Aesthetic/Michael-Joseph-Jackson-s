@@ -686,6 +686,15 @@ document.addEventListener("DOMContentLoaded", async function () {
         const { data: media } = await supabaseClient.from("post_media").select("*").eq("post_id", post.id);
         const { data: links } = await supabaseClient.from("post_links").select("*").eq("post_id", post.id);
 
+        // Formatear la fecha
+        const postDate = new Date(post.created_at).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
         // MINIATURA DE LA TARJETA PEQUEÑA
         if (media && media.length > 0) {
             const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(media[0].file_path);
@@ -694,7 +703,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             const previewContainer = document.createElement("div");
             previewContainer.className = "media-preview";
             
-            // Mostrar imagen, vídeo o icono de audio en la tarjeta exterior
             if (firstFile.file_type && firstFile.file_type.startsWith("video/")) {
                 const video = document.createElement("video");
                 video.src = urlData.publicUrl;
@@ -723,20 +731,25 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         const username = document.createElement("strong");
         username.textContent = post.username;
-        username.style.marginBottom = "10px";
+
+        const dateSpan = document.createElement("span");
+        dateSpan.style.cssText = "font-size:0.8em; color:#888; margin-bottom:8px; display:block;";
+        dateSpan.textContent = postDate;
         
         const content = document.createElement("p");
         content.className = "post-text-preview";
         content.textContent = post.content;
 
         postCard.appendChild(username);
+        postCard.appendChild(dateSpan);
         postCard.appendChild(content);
 
         // ABRIR MODAL COMPLETO
         postCard.addEventListener("click", () => {
             const modalBody = document.getElementById("modal-post-body");
             modalBody.innerHTML = `
-                <h2 style="margin-top:0; color:#ff6b6b;">${post.username}</h2>
+                <h2 style="margin-top:0; color:#ff6b6b; margin-bottom:5px;">${post.username}</h2>
+                <small style="color:#888; display:block; margin-bottom:15px;">📅 ${postDate}</small>
                 <p id="modal-text-${post.id}" style="font-size:1.1em; line-height:1.6;">${post.content}</p>
                 <div id="modal-media-container" style="display:flex; flex-direction:column; gap:15px; margin-top:20px;"></div>
                 <div id="modal-links-container" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;"></div>
@@ -753,14 +766,12 @@ document.addEventListener("DOMContentLoaded", async function () {
                     const fileType = m.file_type || "";
 
                     if (fileType.startsWith("image/")) {
-                        // Imagen
                         const fullImg = document.createElement("img");
                         fullImg.src = uData.publicUrl;
                         fullImg.style.width = "100%";
                         fullImg.style.borderRadius = "10px";
                         wrapper.appendChild(fullImg);
                     } else if (fileType.startsWith("video/")) {
-                        // Vídeo (mp4, webm, etc.)
                         const video = document.createElement("video");
                         video.src = uData.publicUrl;
                         video.controls = true;
@@ -768,14 +779,12 @@ document.addEventListener("DOMContentLoaded", async function () {
                         video.style.borderRadius = "10px";
                         wrapper.appendChild(video);
                     } else if (fileType.startsWith("audio/")) {
-                        // Audio (mp3, m4a, wav, etc.)
                         const audio = document.createElement("audio");
                         audio.src = uData.publicUrl;
                         audio.controls = true;
                         audio.style.width = "100%";
                         wrapper.appendChild(audio);
                     } else {
-                        // Otros archivos (documentos, HTML, etc.) -> Enlace para abrir/descargar
                         const fileLink = document.createElement("a");
                         fileLink.href = uData.publicUrl;
                         fileLink.target = "_blank";
