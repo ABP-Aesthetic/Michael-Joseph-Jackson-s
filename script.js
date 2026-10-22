@@ -346,7 +346,7 @@ const loggedInMessage = document.getElementById("logged-in-message");
 loggedInMessage.innerHTML = `
     <p>Hi, Moonwalker!! 💗✨</p>
 
-    <p>I’m so glad you decided to join this community. I sincerely hope you find a little corner here where you can express and share ideas, thoughts, and feelings with other fans like you. 💖</p>
+    <p>I’m so glad you decided to join this community. I sincerely hope you find a little corner here where you can express and share ideas, thoughts and feelings with other fans like you. 💖</p>
 
     <p>You’ve just joined us as <strong>${profile.username}</strong>.</p>
 `;
