@@ -651,7 +651,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // --- INICIO CARGA DE POSTS CON IMÁGENES Y LINKS ---
-// --- INICIO CARGA DE POSTS (CON LIKES, DISLIKES Y COMENTARIOS) ---
+// --- INICIO CARGA DE POSTS (SISTEMA COMPLETO CON EDICIÓN DE POSTS Y COMENTARIOS) ---
 document.addEventListener("DOMContentLoaded", async function () {
     const postsContainer = document.getElementById("posts-container");
 
@@ -691,7 +691,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
-        // MINIATURA
+        // MINIATURA DE TARJETA
         if (media && media.length > 0) {
             const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(media[0].file_path);
             const firstFile = media[0];
@@ -739,7 +739,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         postCard.appendChild(dateSpan);
         postCard.appendChild(content);
 
-        // BOTÓN 3 PUNTITOS (MENÚ DE OPCIONES RÁPIDAS)
+        // MENÚ DE TRES PUNTOS
         const menuBtn = document.createElement("button");
         menuBtn.textContent = "⋮";
         menuBtn.style.cssText = "position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); border:none; font-size:1.4em; cursor:pointer; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; z-index:5;";
@@ -770,7 +770,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         postsContainer.appendChild(postCard);
     }
 
-    // FUNCIÓN PARA GESTIONAR LIKES/DISLIKES DE POSTS
     async function togglePostReaction(postId, type) {
         if (!user) return alert("Please log in to react.");
         const { data: existing } = await supabaseClient.from("post_reactions").select("*").eq("post_id", postId).eq("user_id", user.id).single();
@@ -786,7 +785,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         location.reload();
     }
 
-    // ABRIR EL MODAL DEL POST
     async function openPostModal(post, media, links, postDate, focusComment = false) {
         const modalBody = document.getElementById("modal-post-body");
         modalBody.innerHTML = `
@@ -796,18 +794,17 @@ document.addEventListener("DOMContentLoaded", async function () {
             <div id="modal-media-container" style="display:flex; flex-direction:column; gap:15px; margin-top:20px;"></div>
             <div id="modal-links-container" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;"></div>
             
-            <!-- REACCIONES DEL POST -->
             <div id="post-reactions-bar" style="display:flex; gap:20px; align-items:center; margin-top:20px; padding:10px 0; border-top:1px solid #eee; border-bottom:1px solid #eee;">
                 <button id="post-like-btn" style="background:none; border:none; cursor:pointer; font-size:1.2em;">👍 <span id="post-like-count">0</span></button>
                 <button id="post-dislike-btn" style="background:none; border:none; cursor:pointer; font-size:1.2em;">👎 <span id="post-dislike-count">0</span></button>
             </div>
 
-            <!-- SECCIÓN DE COMENTARIOS -->
+            <div id="modal-actions" style="margin-top:15px; padding-top:10px;"></div>
+
             <div id="comments-section" style="margin-top:25px;">
                 <h3>Comments</h3>
                 <div id="comments-list" style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;"></div>
                 
-                <!-- CREADOR DE COMENTARIOS -->
                 <div id="add-comment-box" style="background:#f9f9f9; padding:15px; border-radius:8px;">
                     <textarea id="comment-text" placeholder="Write a comment..." style="width:100%; height:60px; padding:8px; box-sizing:border-box;"></textarea>
                     
@@ -823,11 +820,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                     <button id="submit-comment-btn" style="margin-top:10px; padding:8px 15px; background:#ff6b6b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Comment</button>
                 </div>
             </div>
-
-            <div id="modal-actions" style="margin-top:25px; padding-top:20px; border-top:1px solid #ddd;"></div>
         `;
 
-        // CARGAR CONTADORES DE REACCIONES DEL POST
+        // REACCIONES POST
         const { data: reactions } = await supabaseClient.from("post_reactions").select("*").eq("post_id", post.id);
         const likes = reactions ? reactions.filter(r => r.type === 'like') : [];
         const dislikes = reactions ? reactions.filter(r => r.type === 'dislike') : [];
@@ -847,7 +842,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         likeBtn.onclick = async () => { await togglePostReaction(post.id, 'like'); openPostModal(post, media, links, postDate); };
         dislikeBtn.onclick = async () => { await togglePostReaction(post.id, 'dislike'); openPostModal(post, media, links, postDate); };
 
-        // MOSTRAR ARCHIVOS Y LINKS DEL POST
+        // MOSTRAR ARCHIVOS Y LINKS EN MODAL
         if (media) {
             const mediaContainer = modalBody.querySelector("#modal-media-container");
             media.forEach(m => {
@@ -896,9 +891,117 @@ document.addEventListener("DOMContentLoaded", async function () {
             });
         }
 
-        // EDICIÓN / BORRADO DEL PROPIETARIO
+        // AQUÍ ESTÁN NUEVAMENTE LOS BOTONES DE EDITAR Y BORRAR POST
         if (user && user.id === post.user_id) {
             const actionsContainer = modalBody.querySelector("#modal-actions");
+            
+            const editBtn = document.createElement("button");
+            editBtn.textContent = "✏️ Edit Post";
+            editBtn.style.marginRight = "10px";
+
+            editBtn.onclick = () => {
+                actionsContainer.innerHTML = "";
+                const currentTextP = modalBody.querySelector(`#modal-text-${post.id}`);
+                const mediaContainer = modalBody.querySelector("#modal-media-container");
+                const linksContainer = modalBody.querySelector("#modal-links-container");
+
+                let mediaToDelete = [];
+                let linksToDelete = [];
+                let editFilesList = [];
+                let editLinksList = [];
+
+                const textArea = document.createElement("textarea");
+                textArea.value = post.content;
+                textArea.style.cssText = "width:100%; height:80px; margin-bottom:15px;";
+                currentTextP.replaceWith(textArea);
+
+                if (media && media.length > 0) {
+                    media.forEach(m => {
+                        const wrapper = mediaContainer.querySelector(`[data-media-id="${m.id}"]`);
+                        if (wrapper && !wrapper.querySelector(".edit-del-btn")) {
+                            wrapper.style.position = "relative";
+                            const delBtn = document.createElement("button");
+                            delBtn.className = "edit-del-btn";
+                            delBtn.textContent = "✕ Remove";
+                            delBtn.style.cssText = "position:absolute; top:10px; right:10px; background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;";
+                            delBtn.onclick = () => {
+                                mediaToDelete.push(m);
+                                wrapper.style.opacity = "0.3";
+                                delBtn.disabled = true;
+                            };
+                            wrapper.appendChild(delBtn);
+                        }
+                    });
+                }
+
+                if (links && links.length > 0) {
+                    linksContainer.querySelectorAll("a").forEach((aTag, idx) => {
+                        const l = links[idx];
+                        if (!l) return;
+                        const delLinkBtn = document.createElement("button");
+                        delLinkBtn.textContent = "✕";
+                        delLinkBtn.style.cssText = "margin-left:10px; background:#ff4d4d; color:white; border:none; border-radius:3px; cursor:pointer;";
+                        delLinkBtn.onclick = () => {
+                            linksToDelete.push(l.id);
+                            aTag.style.textDecoration = "line-through";
+                            delLinkBtn.disabled = true;
+                        };
+                        aTag.after(delLinkBtn);
+                    });
+                }
+
+                const dropZoneEdit = document.createElement("div");
+                dropZoneEdit.style.cssText = "border: 2px dashed #ccc; padding: 10px; text-align: center; border-radius: 8px; cursor: pointer; margin-top: 10px;";
+                dropZoneEdit.innerHTML = "📁 Drag new files here or click";
+
+                const fileInputEdit = document.createElement("input");
+                fileInputEdit.type = "file";
+                fileInputEdit.multiple = true;
+                fileInputEdit.style.display = "none";
+                const editFilesPreview = document.createElement("div");
+
+                dropZoneEdit.onclick = () => fileInputEdit.click();
+                fileInputEdit.onchange = (e) => {
+                    editFilesList.push(...Array.from(e.target.files));
+                    editFilesPreview.textContent = editFilesList.map(f => f.name).join(", ");
+                };
+
+                const saveAllBtn = document.createElement("button");
+                saveAllBtn.textContent = "✅ Save Changes";
+                saveAllBtn.style.cssText = "margin-top:15px; padding:8px 15px; background:#ff6b6b; color:white; border:none; border-radius:5px; cursor:pointer;";
+
+                saveAllBtn.onclick = async () => {
+                    const newText = textArea.value.trim();
+                    if (!newText) return alert("Text cannot be empty.");
+                    
+                    await supabaseClient.from("posts").update({ content: newText }).eq("id", post.id);
+
+                    for (const m of mediaToDelete) {
+                        await supabaseClient.from("post_media").delete().eq("id", m.id);
+                        await supabaseClient.storage.from("post-media").remove([m.file_path]);
+                    }
+                    for (const linkId of linksToDelete) {
+                        await supabaseClient.from("post_links").delete().eq("id", linkId);
+                    }
+                    for (const file of editFilesList) {
+                        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+                        const filePath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+                        await supabaseClient.storage.from("post-media").upload(filePath, file);
+                        await supabaseClient.from("post_media").insert({
+                            post_id: post.id, file_path: filePath, file_type: file.type, original_name: file.name
+                        });
+                    }
+
+                    alert("Post updated! ✨");
+                    location.reload();
+                };
+
+                actionsContainer.appendChild(dropZoneEdit);
+                actionsContainer.appendChild(fileInputEdit);
+                actionsContainer.appendChild(editFilesPreview);
+                actionsContainer.appendChild(saveAllBtn);
+            };
+
             const delBtn = document.createElement("button");
             delBtn.textContent = "🗑️ Delete Post";
             delBtn.onclick = async () => {
@@ -906,13 +1009,14 @@ document.addEventListener("DOMContentLoaded", async function () {
                 await supabaseClient.from("posts").update({ deleted: true }).eq("id", post.id);
                 location.reload();
             };
+
+            actionsContainer.appendChild(editBtn);
             actionsContainer.appendChild(delBtn);
         }
 
-        // CARGAR COMENTARIOS DEL POST
         loadComments(post.id);
 
-        // LÓGICA DE SUBIR ARCHIVOS EN EL COMENTARIO
+        // PUBLICAR COMENTARIO PRINCIPAL
         let commentFiles = [];
         let commentLinks = [];
 
@@ -939,7 +1043,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
         };
 
-        // PUBLICAR COMENTARIO
         modalBody.querySelector("#submit-comment-btn").onclick = async () => {
             if (!user) return alert("Log in to comment.");
             const text = modalBody.querySelector("#comment-text").value.trim();
@@ -954,25 +1057,17 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             if (cErr) return alert("Error: " + cErr.message);
 
-            // Subir archivos del comentario
             for (const file of commentFiles) {
                 const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
                 const filePath = `comments/${user.id}/${crypto.randomUUID()}-${safeName}`;
                 await supabaseClient.storage.from("post-media").upload(filePath, file);
                 await supabaseClient.from("comment_media").insert({
-                    comment_id: newComment.id,
-                    file_path: filePath,
-                    file_type: file.type,
-                    original_name: file.name
+                    comment_id: newComment.id, file_path: filePath, file_type: file.type, original_name: file.name
                 });
             }
 
-            // Subir links del comentario
             for (const url of commentLinks) {
-                await supabaseClient.from("comment_links").insert({
-                    comment_id: newComment.id,
-                    url: url
-                });
+                await supabaseClient.from("comment_links").insert({ comment_id: newComment.id, url: url });
             }
 
             loadComments(post.id);
@@ -987,7 +1082,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (focusComment) modalBody.querySelector("#comment-text").focus();
     }
 
-    // CARGAR Y RENDERIZAR COMENTARIOS Y RESPUESTAS (ANIDADOS)
     async function loadComments(postId) {
         const list = document.getElementById("comments-list");
         list.innerHTML = "Loading comments...";
@@ -1001,16 +1095,14 @@ document.addEventListener("DOMContentLoaded", async function () {
             return;
         }
 
-        // Separar comentarios principales y respuestas
         const mainComments = comments.filter(c => !c.parent_comment_id);
-        
         for (const c of mainComments) {
             const commentEl = await renderCommentTree(c, comments);
             list.appendChild(commentEl);
         }
     }
 
-    // DIBUJAR COMENTARIO + REACCIONES + MULTIMEDIA + RESPUESTAS
+    // RENDERIZAR COMENTARIOS Y RESPUESTAS RECURSIVAMENTE (INFINITO) CON ADJUNTOS, EDICIÓN Y BORRADO
     async function renderCommentTree(comment, allComments) {
         const container = document.createElement("div");
         container.style.cssText = "background:#fff; border:1px solid #eee; padding:12px; border-radius:8px;";
@@ -1026,7 +1118,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         container.appendChild(head);
         container.appendChild(body);
 
-        // Archivos adjuntos del comentario
+        // MEDIA DEL COMENTARIO
         const { data: cMedia } = await supabaseClient.from("comment_media").select("*").eq("comment_id", comment.id);
         if (cMedia && cMedia.length > 0) {
             const mBox = document.createElement("div");
@@ -1055,7 +1147,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             container.appendChild(mBox);
         }
 
-        // Links del comentario
+        // LINKS DEL COMENTARIO
         const { data: cLinks } = await supabaseClient.from("comment_links").select("*").eq("comment_id", comment.id);
         if (cLinks && cLinks.length > 0) {
             cLinks.forEach(l => {
@@ -1074,7 +1166,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         const cDislikes = cReactions ? cReactions.filter(r => r.type === 'dislike').length : 0;
 
         const reactBar = document.createElement("div");
-        reactBar.style.cssText = "display:flex; gap:15px; font-size:0.85em; margin-top:8px; color:#555;";
+        reactBar.style.cssText = "display:flex; gap:15px; font-size:0.85em; margin-top:8px; color:#555; align-items:center;";
         
         let userCReaction = user && cReactions ? cReactions.find(r => r.user_id === user.id)?.type : null;
         
@@ -1082,7 +1174,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         likeBtn.style.cursor = "pointer";
         likeBtn.innerHTML = `${userCReaction === 'like' ? '❤️' : '🤍'} ${cLikes}`;
         likeBtn.onclick = async () => {
-            if (!user) return alert("Log in to react.");
+            if (!user) return alert("Log in.");
             if (userCReaction === 'like') {
                 await supabaseClient.from("comment_reactions").delete().eq("comment_id", comment.id).eq("user_id", user.id);
             } else {
@@ -1095,7 +1187,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         dislikeBtn.style.cursor = "pointer";
         dislikeBtn.innerHTML = `${userCReaction === 'dislike' ? '🖤' : '🤍'} ${cDislikes}`;
         dislikeBtn.onclick = async () => {
-            if (!user) return alert("Log in to react.");
+            if (!user) return alert("Log in.");
             if (userCReaction === 'dislike') {
                 await supabaseClient.from("comment_reactions").delete().eq("comment_id", comment.id).eq("user_id", user.id);
             } else {
@@ -1111,34 +1203,103 @@ document.addEventListener("DOMContentLoaded", async function () {
         reactBar.appendChild(likeBtn);
         reactBar.appendChild(dislikeBtn);
         reactBar.appendChild(replyBtn);
+
+        // EDITAR Y BORRAR COMENTARIO (SI ES DEL AUTOR)
+        if (user && user.id === comment.user_id) {
+            const editCBtn = document.createElement("span");
+            editCBtn.textContent = "✏️ Edit";
+            editCBtn.style.cssText = "cursor:pointer; color:#0066cc;";
+            editCBtn.onclick = () => {
+                const editBox = document.createElement("div");
+                editBox.style.marginTop = "8px";
+                editBox.innerHTML = `
+                    <input type="text" class="edit-c-input" value="${comment.content}" style="width:70%; padding:5px;">
+                    <button class="save-c-btn">Save</button>
+                `;
+                body.replaceWith(editBox);
+                editBox.querySelector(".save-c-btn").onclick = async () => {
+                    const newCVal = editBox.querySelector(".edit-c-input").value.trim();
+                    if (!newCVal) return;
+                    await supabaseClient.from("post_comments").update({ content: newCVal }).eq("id", comment.id);
+                    loadComments(comment.post_id);
+                };
+            };
+
+            const delCBtn = document.createElement("span");
+            delCBtn.textContent = "🗑️ Delete";
+            delCBtn.style.cssText = "cursor:pointer; color:red;";
+            delCBtn.onclick = async () => {
+                if (!confirm("Delete comment?")) return;
+                await supabaseClient.from("post_comments").delete().eq("id", comment.id);
+                loadComments(comment.post_id);
+            };
+
+            reactBar.appendChild(editCBtn);
+            reactBar.appendChild(delCBtn);
+        }
+
         container.appendChild(reactBar);
 
-        // CAJA DE RESPUESTA A ESTE COMENTARIO
+        // CAJA DE RESPUESTA COMPLETA (CON ARCHIVOS Y LINKS)
         const replyBox = document.createElement("div");
-        replyBox.style.cssText = "display:none; margin-top:10px; padding-left:15px;";
+        replyBox.style.cssText = "display:none; margin-top:10px; background:#f4f4f4; padding:10px; border-radius:5px;";
         replyBox.innerHTML = `
-            <input type="text" class="reply-input" placeholder="Write a reply..." style="width:70%; padding:5px;">
-            <button class="send-reply-btn" style="padding:5px 10px;">Reply</button>
+            <input type="text" class="reply-input" placeholder="Write a reply..." style="width:100%; padding:5px; box-sizing:border-box;">
+            <div style="display:flex; gap:10px; margin-top:8px; align-items:center;">
+                <input type="file" class="reply-files" multiple accept="*/*" style="display:none;">
+                <button type="button" class="reply-file-btn">📁 Media</button>
+                <input type="url" class="reply-link-input" placeholder="Paste link..." style="flex:1; padding:4px;">
+            </div>
+            <div class="reply-files-preview" style="font-size:0.8em; margin-top:4px;"></div>
+            <button class="send-reply-btn" style="margin-top:8px; padding:5px 10px; background:#ff6b6b; color:white; border:none; border-radius:3px; cursor:pointer;">Send Reply</button>
         `;
         container.appendChild(replyBox);
 
         replyBtn.onclick = () => replyBox.style.display = replyBox.style.display === "none" ? "block" : "none";
 
+        let rFiles = [];
+        const rFileInput = replyBox.querySelector(".reply-files");
+        const rFileBtn = replyBox.querySelector(".reply-file-btn");
+        const rFilesPreview = replyBox.querySelector(".reply-files-preview");
+
+        rFileBtn.onclick = () => rFileInput.click();
+        rFileInput.onchange = (e) => {
+            rFiles.push(...Array.from(e.target.files));
+            rFilesPreview.textContent = rFiles.map(f => f.name).join(", ");
+        };
+
         replyBox.querySelector(".send-reply-btn").onclick = async () => {
             if (!user) return alert("Log in.");
             const val = replyBox.querySelector(".reply-input").value.trim();
-            if (!val) return;
-            await supabaseClient.from("post_comments").insert({
+            const rLinkVal = replyBox.querySelector(".reply-link-input").value.trim();
+
+            if (!val) return alert("Write a reply.");
+
+            const { data: newReply } = await supabaseClient.from("post_comments").insert({
                 post_id: comment.post_id,
                 parent_comment_id: comment.id,
                 user_id: user.id,
                 username: user.email.split('@')[0],
                 content: val
-            });
+            }).select().single();
+
+            for (const file of rFiles) {
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+                const filePath = `comments/${user.id}/${crypto.randomUUID()}-${safeName}`;
+                await supabaseClient.storage.from("post-media").upload(filePath, file);
+                await supabaseClient.from("comment_media").insert({
+                    comment_id: newReply.id, file_path: filePath, file_type: file.type, original_name: file.name
+                });
+            }
+
+            if (rLinkVal) {
+                await supabaseClient.from("comment_links").insert({ comment_id: newReply.id, url: rLinkVal });
+            }
+
             loadComments(comment.post_id);
         };
 
-        // Renderizar respuestas hijas (comentarios de este comentario)
+        // RESPUESTAS ANIDADAS (INFINITAS RECURSIVAS)
         const replies = allComments.filter(c => c.parent_comment_id === comment.id);
         if (replies.length > 0) {
             const repliesContainer = document.createElement("div");
