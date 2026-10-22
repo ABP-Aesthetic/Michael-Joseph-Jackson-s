@@ -762,37 +762,176 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (user && user.id === post.user_id) {
                 const actionsContainer = modalBody.querySelector("#modal-actions");
                 
-                // Editar Texto
+                // --- MODO DE EDICIÓN COMPLETO ---
                 const editBtn = document.createElement("button");
-                editBtn.textContent = "✏️ Edit Text";
+                editBtn.textContent = "✏️ Edit Post";
                 editBtn.style.marginRight = "10px";
+
                 editBtn.onclick = () => {
+                    actionsContainer.innerHTML = ""; // Limpiamos los botones
+
                     const currentTextP = modalBody.querySelector(`#modal-text-${post.id}`);
-                    if(!currentTextP) return;
-                    
+                    const mediaContainer = modalBody.querySelector("#modal-media-container");
+                    const linksContainer = modalBody.querySelector("#modal-links-container");
+
+                    // 1. Campo para editar el texto
                     const textArea = document.createElement("textarea");
                     textArea.value = post.content;
                     textArea.style.width = "100%";
-                    textArea.style.height = "120px";
-                    
-                    const saveBtn = document.createElement("button");
-                    saveBtn.textContent = "✅ Save";
-                    saveBtn.onclick = async () => {
-                        const newText = textArea.value.trim();
-                        if(!newText) return;
-                        saveBtn.textContent = "Saving...";
-                        const { error: updErr } = await supabaseClient.from("posts").update({ content: newText }).eq("id", post.id);
-                        if(updErr) { alert("Error: " + updErr.message); saveBtn.textContent = "✅ Save"; return; }
-                        
-                        post.content = newText;
-                        content.textContent = newText; // Actualiza la tarjeta pequeña
-                        currentTextP.textContent = newText; // Actualiza el modal
-                        textArea.replaceWith(currentTextP);
-                        saveBtn.remove();
-                    };
-                    
+                    textArea.style.height = "100px";
+                    textArea.style.marginBottom = "15px";
                     currentTextP.replaceWith(textArea);
-                    actionsContainer.appendChild(saveBtn);
+
+                    // 2. Añadir botones de borrado a las imágenes existentes
+                    if (media && media.length > 0) {
+                        mediaContainer.innerHTML = "<strong>Current Media (click X to delete):</strong>";
+                        media.forEach(m => {
+                            const wrapper = document.createElement("div");
+                            wrapper.style.position = "relative";
+                            wrapper.style.marginBottom = "10px";
+
+                            const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(m.file_path);
+                            const img = document.createElement("img");
+                            img.src = uData.publicUrl;
+                            img.style.width = "100%";
+                            img.style.borderRadius = "8px";
+
+                            const delMediaBtn = document.createElement("button");
+                            delMediaBtn.textContent = "✕ Delete Image";
+                            delMediaBtn.style.position = "absolute";
+                            delMediaBtn.style.top = "10px";
+                            delMediaBtn.style.right = "10px";
+                            delMediaBtn.style.background = "#ff4d4d";
+                            delMediaBtn.style.color = "white";
+                            delMediaBtn.style.border = "none";
+                            delMediaBtn.style.padding = "5px 10px";
+                            delMediaBtn.style.borderRadius = "5px";
+                            delMediaBtn.style.cursor = "pointer";
+
+                            delMediaBtn.onclick = async () => {
+                                if (!confirm("Delete this image?")) return;
+                                await supabaseClient.from("post_media").delete().eq("id", m.id);
+                                wrapper.remove();
+                            };
+
+                            wrapper.appendChild(img);
+                            wrapper.appendChild(delMediaBtn);
+                            mediaContainer.appendChild(wrapper);
+                        });
+                    }
+
+                    // 3. Añadir botones de borrado a los enlaces existentes
+                    if (links && links.length > 0) {
+                        linksContainer.innerHTML = "<strong>Current Links (click X to delete):</strong>";
+                        links.forEach(l => {
+                            const linkRow = document.createElement("div");
+                            linkRow.style.display = "flex";
+                            linkRow.style.justifyContent = "space-between";
+                            linkRow.style.alignItems = "center";
+                            linkRow.style.marginBottom = "5px";
+
+                            const span = document.createElement("span");
+                            span.textContent = "🔗 " + l.url;
+
+                            const delLinkBtn = document.createElement("button");
+                            delLinkBtn.textContent = "✕";
+                            delLinkBtn.style.background = "#ff4d4d";
+                            delLinkBtn.style.color = "white";
+                            delLinkBtn.style.border = "none";
+                            delLinkBtn.style.borderRadius = "3px";
+                            delLinkBtn.style.cursor = "pointer";
+
+                            delLinkBtn.onclick = async () => {
+                                await supabaseClient.from("post_links").delete().eq("id", l.id);
+                                linkRow.remove();
+                            };
+
+                            linkRow.appendChild(span);
+                            linkRow.appendChild(delLinkBtn);
+                            linksContainer.appendChild(linkRow);
+                        });
+                    }
+
+                    // 4. Campos para AÑADIR nuevas fotos y links
+                    const newFileInput = document.createElement("input");
+                    newFileInput.type = "file";
+                    newFileInput.multiple = true;
+                    newFileInput.accept = "image/*";
+                    newFileInput.style.marginTop = "15px";
+
+                    const newLinkInput = document.createElement("input");
+                    newLinkInput.type = "url";
+                    newLinkInput.placeholder = "Add a new URL (https://...)";
+                    newLinkInput.style.width = "100%";
+                    newLinkInput.style.marginTop = "10px";
+                    newLinkInput.style.padding = "8px";
+
+                    actionsContainer.appendChild(document.createElement("hr"));
+                    actionsContainer.appendChild(document.createTextNode("Add new media:"));
+                    actionsContainer.appendChild(newFileInput);
+                    actionsContainer.appendChild(newLinkInput);
+
+                    // 5. Botón de Guardar Todo
+                    const saveAllBtn = document.createElement("button");
+                    saveAllBtn.textContent = "✅ Save Changes";
+                    saveAllBtn.style.marginTop = "15px";
+                    saveAllBtn.style.padding = "10px 15px";
+                    saveAllBtn.style.backgroundColor = "#4CAF50";
+                    saveAllBtn.style.color = "white";
+                    saveAllBtn.style.border = "none";
+                    saveAllBtn.style.borderRadius = "5px";
+                    saveAllBtn.style.cursor = "pointer";
+
+                    saveAllBtn.onclick = async () => {
+                        const newText = textArea.value.trim();
+                        if (!newText) {
+                            alert("Post content cannot be empty.");
+                            return;
+                        }
+
+                        saveAllBtn.disabled = true;
+                        saveAllBtn.textContent = "Saving...";
+
+                        try {
+                            // Actualizar texto en la tabla `posts`
+                            await supabaseClient.from("posts").update({ content: newText }).eq("id", post.id);
+
+                            // Subir nuevos archivos si hay alguno seleccionado
+                            if (newFileInput.files.length > 0) {
+                                for (const file of newFileInput.files) {
+                                    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+                                    const filePath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+
+                                    await supabaseClient.storage.from("post-media").upload(filePath, file);
+                                    await supabaseClient.from("post_media").insert({
+                                        post_id: post.id,
+                                        file_path: filePath,
+                                        file_type: file.type,
+                                        original_name: file.name
+                                    });
+                                }
+                            }
+
+                            // Subir nuevo enlace si se introdujo alguno
+                            const newUrl = newLinkInput.value.trim();
+                            if (newUrl) {
+                                await supabaseClient.from("post_links").insert({
+                                    post_id: post.id,
+                                    url: newUrl
+                                });
+                            }
+
+                            alert("Post updated! ✨");
+                            location.reload();
+
+                        } catch (err) {
+                            alert("Error updating post: " + err.message);
+                            saveAllBtn.disabled = false;
+                            saveAllBtn.textContent = "✅ Save Changes";
+                        }
+                    };
+
+                    actionsContainer.appendChild(saveAllBtn);
                 };
                 
                 // Eliminar Post
