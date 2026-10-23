@@ -742,7 +742,26 @@ document.addEventListener("DOMContentLoaded", async function () {
         postCard.appendChild(username);
         postCard.appendChild(dateSpan);
         postCard.appendChild(content);
+// Crear contenedor de avisos/burbujas (badges)
+        const warningsContainer = document.createElement("div");
+        warningsContainer.style.cssText = "display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;";
 
+        if (post.no_ai === false) {
+            const aiBadge = document.createElement("span");
+            aiBadge.textContent = "⚠️ AI / Edit";
+            aiBadge.style.cssText = "background: #fff3cd; color: #856404; font-size: 0.75em; padding: 2px 6px; border-radius: 12px; font-weight: bold;";
+            warningsContainer.appendChild(aiBadge);
+        }
+
+        if (post.youth_friendly === false) {
+            const youthBadge = document.createElement("span");
+            youthBadge.textContent = "🔞 Not for young Moonwalkers";
+            youthBadge.style.cssText = "background: #f8d7da; color: #721c24; font-size: 0.75em; padding: 2px 6px; border-radius: 12px; font-weight: bold;";
+            warningsContainer.appendChild(youthBadge);
+        }
+
+        postCard.appendChild(warningsContainer);
+        
         const menuBtn = document.createElement("button");
         menuBtn.textContent = "⋮";
         menuBtn.style.cssText = "position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); border:none; font-size:1.4em; cursor:pointer; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; z-index:5;";
