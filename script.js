@@ -685,6 +685,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     postsContainer.innerHTML = "";
 
     for (const post of posts) {
+        // Obtener el nivel actual seleccionado por el usuario ("simple" o "complete")
+        const currentLevel = localStorage.getItem("siteLevel") || "simple";
+
+        // Si el post tiene marcado NO a la IA o NO a apto para jóvenes, y el usuario está en nivel "simple", nos saltamos este post
+        if (currentLevel === "simple" && (post.no_ai === false || post.youth_friendly === false)) {
+            continue;
+        }
         const postCard = document.createElement("article");
         postCard.className = "post-card";
         postCard.style.position = "relative";
