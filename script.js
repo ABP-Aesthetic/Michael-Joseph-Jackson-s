@@ -735,8 +735,11 @@ document.addEventListener("DOMContentLoaded", async function () {
             postCard.appendChild(previewContainer);
         }
 
-        const username = document.createElement("strong");
-        username.textContent = post.username;
+        const username = document.createElement("a");
+username.textContent = post.username;
+username.href = `profile.html?user=${encodeURIComponent(post.username)}`;
+username.style.cssText = "color: #333; text-decoration: none; font-weight: bold; cursor: pointer;";
+username.onclick = (e) => e.stopPropagation(); // Evita que abra el modal del post
 
         const dateSpan = document.createElement("span");
         dateSpan.style.cssText = "font-size:0.8em; color:#888; margin-bottom:8px; display:block;";
