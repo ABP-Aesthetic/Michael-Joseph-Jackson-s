@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     const { data: { user: currentUser } } = await supabaseClient.auth.getUser();
 
-    // 1. Obtener ID del usuario desde la tabla profiles
+    // Obtener ID del perfil
     const { data: mainProfile } = await supabaseClient
         .from("profiles")
         .select("id, username")
@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     const targetUserId = mainProfile?.id;
 
-    // 2. Obtener o crear datos en user_profiles
+    // Obtener datos de user_profiles
     let { data: profile } = await supabaseClient
         .from("user_profiles")
         .select("*")
@@ -35,11 +35,9 @@ document.addEventListener("DOMContentLoaded", async function () {
             .select()
             .maybeSingle();
         profile = newProf || { username: targetUsername, user_id: targetUserId };
-    } else if (!profile.user_id && targetUserId) {
-        profile.user_id = targetUserId;
     }
 
-    // Renderizar Avatar o Inicial Aleatoria
+    // Renderizar Avatar o Inicial
     const avatarContainer = document.getElementById("avatar-container");
     if (profile?.avatar_url) {
         avatarContainer.innerHTML = `<img src="${profile.avatar_url}" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover;">`;
@@ -61,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("profile-bio").textContent = profile.bio || "No bio yet.";
     document.getElementById("profile-email").textContent = profile.email ? `📧 ${profile.email}` : "";
 
-    // Contador de Seguidores / Seguidos
+    // Seguidores
     let followers = [];
     let following = [];
     if (profile.user_id) {
@@ -75,7 +73,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     const actionsContainer = document.getElementById("profile-actions");
     actionsContainer.innerHTML = "";
 
-    // Mostrar botón Editar si eres el dueño, o botón Seguir si eres otro usuario
     const isOwner = currentUser && (currentUser.id === profile.user_id || currentUser.user_metadata?.username === targetUsername);
 
     if (isOwner) {
@@ -89,20 +86,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             document.getElementById("edit-status").value = profile.status || "";
             document.getElementById("edit-bio").value = profile.bio || "";
             document.getElementById("edit-email").value = profile.email || "";
-
-            // Conectar el botón de la foto de perfil igual que en los posts
-            const avatarIn = document.getElementById("edit-avatar-file");
-            const avatarBtn = document.getElementById("avatar-file-btn");
-            const avatarPrev = document.getElementById("avatar-file-preview");
-            window.selectedAvatarFile = null;
-
-            avatarBtn.onclick = () => avatarIn.click();
-            avatarIn.onchange = (e) => {
-                if (e.target.files && e.target.files[0]) {
-                    window.selectedAvatarFile = e.target.files[0];
-                    avatarPrev.textContent = "📁 " + window.selectedAvatarFile.name;
-                }
-            };
         };
         actionsContainer.appendChild(editBtn);
 
@@ -123,36 +106,32 @@ document.addEventListener("DOMContentLoaded", async function () {
         actionsContainer.appendChild(followBtn);
     }
 
-    // Cancelar edición
     document.getElementById("cancel-edit-btn").onclick = () => {
         document.getElementById("edit-profile-form").style.display = "none";
     };
 
-    // Guardar Cambios
+    // Guardar Perfil
     document.getElementById("save-profile-btn").onclick = async () => {
         const newUsername = document.getElementById("edit-username").value.trim();
         const newStatus = document.getElementById("edit-status").value.trim();
         const newBio = document.getElementById("edit-bio").value.trim();
         const newEmail = document.getElementById("edit-email").value.trim();
+        const avatarFile = document.getElementById("edit-avatar-file")?.files[0];
+
         if (!newUsername) return alert("Username cannot be empty.");
 
         let avatarUrl = profile.avatar_url;
 
-        if (window.selectedAvatarFile) {
-            const file = window.selectedAvatarFile;
-            const safeName = file.name
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .replace(/[^a-zA-Z0-9._-]/g, "_");
-
-            const filePath = user.id + "/" + crypto.randomUUID() + "-" + safeName;
-
-            const { error: uploadErr } = await supabaseClient.storage
+        if (avatarFile) {
+            const safeName = avatarFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+            const filePath = `${currentUser.id}/${crypto.randomUUID()}-${safeName}`;
+            
+            const { error: uploadError } = await supabaseClient.storage
                 .from("post-media")
-                .upload(filePath, file);
+                .upload(filePath, avatarFile);
 
-            if (uploadErr) {
-                alert("Error uploading avatar: " + uploadErr.message);
+            if (uploadError) {
+                alert("Upload error: " + uploadError.message);
                 return;
             }
 
@@ -160,10 +139,8 @@ document.addEventListener("DOMContentLoaded", async function () {
             avatarUrl = uData.publicUrl;
         }
 
-        // Actualizar en profiles
         await supabaseClient.from("profiles").update({ username: newUsername }).eq("id", currentUser.id);
 
-        // Actualizar en user_profiles
         await supabaseClient.from("user_profiles").upsert({
             user_id: currentUser.id,
             username: newUsername,
@@ -177,7 +154,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         window.location.href = `profile.html?user=${encodeURIComponent(newUsername)}`;
     };
 
-    // Cargar publicaciones del usuario
+    // Cargar posts de la persona
     const { data: posts } = await supabaseClient
         .from("posts")
         .select("*")
@@ -190,21 +167,65 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (!posts || posts.length === 0) {
         postsContainer.innerHTML = "<p style='color:#888;'>This user has not published anything yet.</p>";
-    } else {
-        for (const p of posts) {
-            const card = document.createElement("article");
-            card.style.cssText = "background:#fff; border:1px solid #ddd; padding:15px; margin-bottom:15px; border-radius:8px;";
-            
-            const postDate = new Date(p.created_at).toLocaleDateString(undefined, {
-                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-            });
+        return;
+    }
 
-            card.innerHTML = `
-                <small style='color:#888; display:block; margin-bottom:5px;'>📅 ${postDate}</small>
-                <p style='margin:5px 0; font-size:1.05em;'>${p.content}</p>
-            `;
+    const currentLevel = localStorage.getItem("siteLevel") || "simple";
 
-            postsContainer.appendChild(card);
+    for (const post of posts) {
+        if (currentLevel === "simple" && (post.no_ai === false || post.youth_friendly === false)) {
+            continue;
         }
+
+        const postCard = document.createElement("article");
+        postCard.className = "post-card";
+        postCard.style.cssText = "background:#fff; border:1px solid #ddd; padding:15px; margin-bottom:15px; border-radius:8px; position:relative;";
+
+        const { data: media } = await supabaseClient.from("post_media").select("*").eq("post_id", post.id);
+
+        const postDate = new Date(post.created_at).toLocaleDateString(undefined, {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+
+        if (media && media.length > 0) {
+            const { data: urlData } = supabaseClient.storage.from("post-media").getPublicUrl(media[0].file_path);
+            const firstFile = media[0];
+            const previewContainer = document.createElement("div");
+            previewContainer.className = "media-preview";
+            
+            if (firstFile.file_type && firstFile.file_type.startsWith("video/")) {
+                const video = document.createElement("video");
+                video.src = urlData.publicUrl;
+                video.style.width = "100%";
+                previewContainer.appendChild(video);
+            } else if (firstFile.file_type && firstFile.file_type.startsWith("audio/")) {
+                const audioBox = document.createElement("div");
+                audioBox.style.cssText = "padding:15px; background:#f0f0f0; text-align:center; border-radius:8px;";
+                audioBox.textContent = "🎵 Audio file";
+                previewContainer.appendChild(audioBox);
+            } else {
+                const img = document.createElement("img");
+                img.src = urlData.publicUrl;
+                img.style.maxWidth = "100%";
+                previewContainer.appendChild(img);
+            }
+            postCard.appendChild(previewContainer);
+        }
+
+        const username = document.createElement("strong");
+        username.textContent = post.username;
+
+        const dateSpan = document.createElement("span");
+        dateSpan.style.cssText = "font-size:0.8em; color:#888; margin-bottom:8px; display:block;";
+        dateSpan.textContent = postDate;
+        
+        const content = document.createElement("p");
+        content.textContent = post.content;
+
+        postCard.appendChild(username);
+        postCard.appendChild(dateSpan);
+        postCard.appendChild(content);
+
+        postsContainer.appendChild(postCard);
     }
 });
