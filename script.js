@@ -348,7 +348,7 @@ loggedInMessage.innerHTML = `
 
     <p>I’m so glad you decided to join this community. I sincerely hope you find a little corner here where you can express and share ideas, thoughts and feelings with other fans like you. 💖</p>
 
-    <p>You’ve just joined us as <strong>${profile.username}</strong>.</p>
+    <p>You’ve just joined us as <a href="profile.html?user=${encodeURIComponent(profile.username)}" style="color: #ff6b6b; font-weight: bold; text-decoration: none;">${profile.username}</a>.</p>
 `;
 
 loggedInArea.style.display = "block";
