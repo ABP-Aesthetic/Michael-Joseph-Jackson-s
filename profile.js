@@ -134,16 +134,28 @@ document.addEventListener("DOMContentLoaded", async function () {
         const newStatus = document.getElementById("edit-status").value.trim();
         const newBio = document.getElementById("edit-bio").value.trim();
         const newEmail = document.getElementById("edit-email").value.trim();
-        const avatarFile = document.getElementById("edit-avatar-file").files[0];
-
         if (!newUsername) return alert("Username cannot be empty.");
 
         let avatarUrl = profile.avatar_url;
 
-        if (avatarFile) {
-            const safeName = avatarFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-            const filePath = `avatars/${currentUser.id}/${crypto.randomUUID()}-${safeName}`;
-            await supabaseClient.storage.from("post-media").upload(filePath, avatarFile);
+        if (window.selectedAvatarFile) {
+            const file = window.selectedAvatarFile;
+            const safeName = file.name
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9._-]/g, "_");
+
+            const filePath = user.id + "/" + crypto.randomUUID() + "-" + safeName;
+
+            const { error: uploadErr } = await supabaseClient.storage
+                .from("post-media")
+                .upload(filePath, file);
+
+            if (uploadErr) {
+                alert("Error uploading avatar: " + uploadErr.message);
+                return;
+            }
+
             const { data: uData } = supabaseClient.storage.from("post-media").getPublicUrl(filePath);
             avatarUrl = uData.publicUrl;
         }
