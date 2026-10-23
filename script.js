@@ -565,13 +565,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 // 1. Guardar Post
+                const checkNoAi = document.getElementById("check-no-ai")?.checked ?? true;
+                const checkYouthFriendly = document.getElementById("check-youth-friendly")?.checked ?? true;
+
                 const { data: post, error: postError } =
                     await supabaseClient
                         .from("posts")
                         .insert({
                             user_id: user.id,
                             username: profile.username,
-                            content: content
+                            content: content,
+                            no_ai: checkNoAi,
+                            youth_friendly: checkYouthFriendly
                         })
                         .select()
                         .single();
