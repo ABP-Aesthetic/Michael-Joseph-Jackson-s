@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | Moonwalkers' Space</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="page-content" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <a href="moonwalkers-space.html" style="text-decoration: none; font-size: 1.1em; color: #ff6b6b; font-weight: bold;">← Back to Space</a>
+
+    <div id="profile-card" style="background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 25px; margin-top: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <!-- Avatar o Letra Inicial -->
+            <div id="avatar-container"></div>
+
+            <div style="flex: 1;">
+                <h1 id="profile-username" style="margin: 0; color: #333;">Loading...</h1>
+                <p id="profile-status" style="margin: 5px 0; font-style: italic; color: #666;"></p>
+                <p id="profile-bio" style="margin: 10px 0; color: #444;"></p>
+                <p id="profile-email" style="margin: 5px 0; font-size: 0.9em; color: #888;"></p>
+                <p id="profile-stats" style="margin-top: 10px; font-weight: bold; color: #555;"></p>
+            </div>
+
+            <div id="profile-actions"></div>
+        </div>
+
+        <!-- Formulario de edición (oculto por defecto) -->
+        <div id="edit-profile-form" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+            <h3>Edit Profile</h3>
+            <label style="display:block; margin-bottom:5px;">Username:</label>
+            <input type="text" id="edit-username" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+            
+            <label style="display:block; margin-bottom:5px;">Status (e.g. "Holiday mood"):</label>
+            <input type="text" id="edit-status" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+
+            <label style="display:block; margin-bottom:5px;">Bio / Description:</label>
+            <textarea id="edit-bio" style="width: 100%; height: 60px; padding: 8px; margin-bottom: 10px;"></textarea>
+
+            <label style="display:block; margin-bottom:5px;">Email:</label>
+            <input type="email" id="edit-email" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+
+            <label style="display:block; margin-bottom:5px;">Profile Picture:</label>
+            <input type="file" id="edit-avatar-file" accept="image/*" style="margin-bottom: 15px;">
+
+            <div>
+                <button id="save-profile-btn" style="padding: 8px 15px; background: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer;">Save Changes</button>
+                <button id="cancel-edit-btn" style="padding: 8px 15px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Posts de este usuario -->
+    <h2 style="margin-top: 30px;">Posts by this Moonwalker</h2>
+    <div id="user-posts-container"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="profile.js"></script>
+
+</body>
+</html>
