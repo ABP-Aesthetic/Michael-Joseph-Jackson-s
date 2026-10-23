@@ -89,6 +89,20 @@ document.addEventListener("DOMContentLoaded", async function () {
             document.getElementById("edit-status").value = profile.status || "";
             document.getElementById("edit-bio").value = profile.bio || "";
             document.getElementById("edit-email").value = profile.email || "";
+
+            // Conectar el botón de la foto de perfil igual que en los posts
+            const avatarIn = document.getElementById("edit-avatar-file");
+            const avatarBtn = document.getElementById("avatar-file-btn");
+            const avatarPrev = document.getElementById("avatar-file-preview");
+            window.selectedAvatarFile = null;
+
+            avatarBtn.onclick = () => avatarIn.click();
+            avatarIn.onchange = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    window.selectedAvatarFile = e.target.files[0];
+                    avatarPrev.textContent = "📁 " + window.selectedAvatarFile.name;
+                }
+            };
         };
         actionsContainer.appendChild(editBtn);
 
