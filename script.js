@@ -820,7 +820,7 @@ username.onclick = (e) => e.stopPropagation(); // Evita que abra el modal del po
     async function openPostModal(post, media, links, postDate, focusComment = false) {
         const modalBody = document.getElementById("modal-post-body");
         modalBody.innerHTML = `
-            <h2 style="margin-top:0; color:#ff6b6b; margin-bottom:5px;">${post.username}</h2>
+            <h2 style="margin-top:0; margin-bottom:5px;"><a href="profile.html?user=${encodeURIComponent(post.username)}" style="color:#ff6b6b; text-decoration:none;">${post.username}</a></h2>
             <small style="color:#888; display:block; margin-bottom:15px;">📅 ${postDate}</small>
             <p id="modal-text-${post.id}" style="font-size:1.1em; line-height:1.6;">${post.content}</p>
             <div id="modal-media-container" style="display:flex; flex-direction:column; gap:15px; margin-top:20px;"></div>
